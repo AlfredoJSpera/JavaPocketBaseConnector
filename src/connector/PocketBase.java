@@ -2,6 +2,7 @@ package connector;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -15,17 +16,21 @@ public class PocketBase {
 	/**
 	 * Instantiates a new PocketBase connection.
 	 *
-	 * @param address the address of the database
+	 * @param address the string address of the database
 	 */
 	public PocketBase(String address) {
 		this.address = address;
 	}
 
 	/**
-	 * Gets the address.
+	 * Instantiates a new PocketBase connection.
 	 *
-	 * @return the address of the database
+	 * @param address the URL address of the database
 	 */
+	public PocketBase(URL address) {
+		this.address = address.toString();
+	}
+
 	public String getAddress() {
 		return address;
 	}
