@@ -89,9 +89,9 @@ public class PocketBase {
 	 * Creates a new record inside a protected collection with an authorization token.
 	 *
 	 * @param collectionName the collection name
-	 * @param data       the json of the data to insert
+	 * @param data           the map containing the data to insert
 	 * @param authToken      the authorization token
-	 * @return the json of the response
+	 * @return the record created
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
@@ -144,10 +144,24 @@ public class PocketBase {
 	}
 
 	/**
+	 * Creates a new record inside a protected collection with an authorization token.
+	 *
+	 * @param collectionName the collection name
+	 * @param record         the record containing to insert
+	 * @param authToken      the authorization token
+	 * @return the record created
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public Record createRecord(String collectionName, Record record, String authToken) throws IOException, PocketBaseException, InterruptedException {
+		return createRecord(collectionName, record.getValues(), authToken);
+	}
+
+	/**
 	 * Creates a new record inside an unprotected collection.
 	 *
 	 * @param collectionName the collection name
-	 * @param data       the json of the data to insert
+	 * @param data           the map containing the data to insert
 	 * @return the json of the response
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
@@ -157,17 +171,18 @@ public class PocketBase {
 	}
 
 	/**
-	 * Gets all the records from an unprotected collection.
+	 * Creates a new record inside an unprotected collection.
 	 *
 	 * @param collectionName the collection name
-	 * @param options        the options to filter the records, leave null for no options
+	 * @param record         the record containing the data to insert
 	 * @return the json of the response
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public CollectionPage readAllRecords(String collectionName, String options) throws IOException, PocketBaseException, InterruptedException {
-		return readAllRecords(collectionName, options, null);
+	public Record createRecord(String collectionName, Record record) throws IOException, PocketBaseException, InterruptedException {
+		return createRecord(collectionName, record.getValues(), null);
 	}
+
 
 	/**
 	 * Gets all the records from a protected collection with the authorization token.
@@ -206,6 +221,19 @@ public class PocketBase {
 		JsonArray itemsArray = jsonObject.getAsJsonArray("items");
 		return null;
 
+	}
+
+	/**
+	 * Gets all the records from an unprotected collection.
+	 *
+	 * @param collectionName the collection name
+	 * @param options        the options to filter the records, leave null for no options
+	 * @return the json of the response
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public CollectionPage readAllRecords(String collectionName, String options) throws IOException, PocketBaseException, InterruptedException {
+		return readAllRecords(collectionName, options, null);
 	}
 
 	/**
@@ -368,7 +396,6 @@ public class PocketBase {
 		// Create the input JSON
 		return authorize(identity, password, adminsUrl);
 	}
-
 
 
 }
