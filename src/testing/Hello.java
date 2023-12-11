@@ -15,11 +15,7 @@ public class Hello {
 
 	public static void main(String[] args) throws IOException, InterruptedException, PocketBaseException {
 		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
-		Map<String, Object> values = new HashMap<>();
-		values.put("content", "content1");
-		values.put("views", 1325);
-		Record record = new Record(values);
-		pb.createRecord("posts", record);
+		pb.adminAuthentication("allora.comse", "seawe");
 
 
 	}

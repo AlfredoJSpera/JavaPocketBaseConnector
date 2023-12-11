@@ -1,9 +1,6 @@
 package connector;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -11,6 +8,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * An abstraction of <a href="https://pocketbase.io/">PocketBase</a>, with all the methods to operate on its records.
@@ -49,31 +47,47 @@ public class PocketBase {
 
 		int statusCode = response.statusCode();
 
-		// If there is an error, throw an exception
-		if (statusCode == 400) {
-			// Creation error
+		System.out.println(response.body());
 
+		// If there is an error, throw an exception
+		if (statusCode >= 400) {
 			JsonObject errorJson = gson.fromJson(response.body(), JsonObject.class);
 
+			// Get the error code and message
 			int errorCode = errorJson.get("code").getAsInt();
 			String errorMessage = errorJson.get("message").getAsString();
 
-			JsonObject data = errorJson.get("data").getAsJsonObject()
-					.get("title").getAsJsonObject();
+			// Get the info code and message
+			JsonObject data = errorJson.get("data").getAsJsonObject();
 
-			String infoCodeMeaning = data.get("code").getAsString();
-			String infoMessage = data.get("message").getAsString();
+			if (!data.isEmpty()) {
+				String entrySet = data.entrySet().toString();
+				StringBuilder str = new StringBuilder();
+				for (int i = 1; i < entrySet.length(); i++) {
+					if (entrySet.charAt(i) == '=' && entrySet.charAt(i+1) == '{') {
+						break;
+					} else {
+						str.append(entrySet.charAt(i));
+					}
+				}
 
-			throw new PocketBaseException(errorCode, errorMessage, infoCodeMeaning, infoMessage);
-		} else if (statusCode >= 401) {
-			JsonObject errorJson = gson.fromJson(response.body(), JsonObject.class);
+				JsonObject entry = null;
+				try {
+					entry = data.get(str.toString()).getAsJsonObject();
+				} catch (Exception e) {
+					throw new PocketBaseException(errorCode, errorMessage, str.toString(), entrySet);
+				}
 
-			String errorCode = errorJson.get("code").getAsString();
-			String errorMessage = errorJson.get("message").getAsString();
 
-			throw new PocketBaseException(errorCode, errorMessage);
+				String infoCodeMeaning = entry.get("code").getAsString();
+				String infoMessage = entry.get("message").getAsString();
+
+				throw new PocketBaseException(errorCode, errorMessage, str.toString(), infoCodeMeaning, infoMessage);
+			} else {
+				throw new PocketBaseException(errorCode, errorMessage);
+			}
+
 		}
-
 
 		// Used for a successful delete request
 		if (statusCode == 204) {
@@ -147,7 +161,6 @@ public class PocketBase {
 				.replace("|", "%7C");
 
 	}
-
 
 	// ==================== CRUD METHODS ====================
 
@@ -435,7 +448,7 @@ public class PocketBase {
 
 
 	/**
-	 * Authenticate a user, given its identity and password.
+	 * Authenticate a regular user.
 	 *
 	 * @param usersCollectionName the collection name
 	 * @param identity            the identity (email)
@@ -451,7 +464,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Authenticate an admin, given its identity and password.
+	 * Authenticate an admin.
 	 *
 	 * @param identity the identity (email)
 	 * @param password the password
