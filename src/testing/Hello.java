@@ -20,8 +20,7 @@ public class Hello {
 		// Creates a PocketBase instance
 		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
-		// Gets everything from the collection "posts" with a filter
-		List<Record> filteredList = pb.readAllRecords("posts",
+		List<Record> list = pb.readAllRecords("posts",
 				new PBQuery(
 					"-views",
 					"views > 60 && title = \"Hello World\"",
@@ -29,15 +28,44 @@ public class Hello {
 				)
 		).getItems();
 
-		printAll(filteredList);
+		printAll("Filtered list:", list);
 
-		// Gets everything from the collection "posts"
-		List<Record> normalList = pb.readAllRecords("posts").getItems();
 
-		printAll(normalList);
+		list = pb.readAllRecords("posts").getItems();
+
+		printAll("Normal list:", list);
+
+		list = pb.readAllRecords("posts",
+				new PBQuery(
+					1,
+					2
+				)
+		).getItems();
+
+		printAll("Paginated list (part 1):", list);
+
+		list = pb.readAllRecords("posts",
+				new PBQuery(
+						2,
+						2
+				)
+		).getItems();
+
+		printAll("Paginated list (part 2):", list);
+
+		list = pb.readAllRecords("posts",
+				new PBQuery(
+						"views",
+						null,
+						null
+				)
+		).getItems();
+
+		printAll("Sorted list:", list);
 	}
 
-	public static void printAll(List<Record> list) {
+	public static void printAll(String title, List<Record> list) {
+		System.out.println(title);
 		for (Record record : list) {
 			Map<String, Object> values = record.getValues();
 			System.out.println(values.get("title") + ", " + values.get("content") + ", " + values.get("views") + ", " + record.getCreated());

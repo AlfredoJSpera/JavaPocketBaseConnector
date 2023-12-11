@@ -5,9 +5,9 @@ public class PBQuery {
 	private final int page;
 	private final int perPage;
 	private final int skipTotal;
-	private String sort = "sort=";
-	private String filter = "filter=";
-	private String expand = "expand=";
+	private final String sort;
+	private final String filter;
+	private final String expand;
 
 	/**
 	 * Sets page to 1, perPage to 500 and skipTotal to 1.
@@ -22,9 +22,36 @@ public class PBQuery {
 		this.perPage = 500;
 		this.skipTotal = 1;
 
-		this.sort += sort;
-		this.filter += filter;
-		this.expand += expand;
+		if (sort != null)
+			this.sort = "sort=" +  sort;
+		else
+			this.sort = null;
+
+		if (filter != null)
+			this.filter = "filter=" + filter;
+		else
+			this.filter = null;
+
+		if (expand != null)
+			this.expand = "expand=" + expand;
+		else
+			this.expand = null;
+	}
+
+	/**
+	 * Used only for pagination.
+	 * @param page    current page number
+	 * @param perPage number of items per page
+	 */
+	public PBQuery(int page, int perPage) {
+		this.page = page;
+		this.perPage = perPage;
+
+		this.skipTotal = 0;
+
+		this.sort = null;
+		this.filter = null;
+		this.expand = null;
 	}
 
 	/**
@@ -36,29 +63,31 @@ public class PBQuery {
 	 * @param filter   filter by field
 	 * @param expand   expand field
 	 */
-	public PBQuery(int page, int perPage, String sort, String filter, String expand) {
+	public PBQuery(int page, int perPage, int skipTotal, String sort, String filter, String expand) {
 		this.page = page;
 		this.perPage = perPage;
 
-		this.skipTotal = 0;
+		this.skipTotal = skipTotal;
 
-		this.sort = sort;
-		this.filter = filter;
-		this.expand = expand;
+		this.sort = "sort=" +  sort;
+		this.filter = "filter=" + filter;
+		this.expand = "expand=" + expand;
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
+
 		result.append("page=").append(page)
 				.append("&perPage=").append(perPage);
-
 		if (skipTotal == 1)
-				result.append("&skipTotal=").append(skipTotal);
-
-		result.append("&").append(sort)
-				.append("&").append(filter)
-				.append("&").append(expand);
+			result.append("&skipTotal=").append(skipTotal);
+		if (sort != null)
+			result.append("&").append(sort);
+		if (filter != null)
+			result.append("&").append(filter);
+		if (expand != null)
+			result.append("&").append(expand);
 
 		return result.toString();
 	}
