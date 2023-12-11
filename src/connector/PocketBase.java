@@ -36,6 +36,7 @@ public class PocketBase {
 
 	/**
 	 * Common method that handles and returns the response of the HTTP request.
+	 *
 	 * @param requestBuilder the request builder
 	 * @return the json response of the HTTP request
 	 */
@@ -63,8 +64,9 @@ public class PocketBase {
 
 	/**
 	 * Common method that tries to authenticate a user or admin
-	 * @param identity the identity (email)
-	 * @param password the password
+	 *
+	 * @param identity       the identity (email)
+	 * @param password       the password
 	 * @param userOrAdminUrl the url for the user or the admin
 	 */
 	private String authorize(String identity, String password, String userOrAdminUrl) throws IOException, InterruptedException, PocketBaseException {
@@ -84,6 +86,7 @@ public class PocketBase {
 
 	/**
 	 * Common method that builds a record from a JSON object.
+	 *
 	 * @param object the JSON object
 	 * @return the record built
 	 */
@@ -245,9 +248,9 @@ public class PocketBase {
 		// Items in the collection page
 		JsonArray items = jsonObject.getAsJsonArray("items");
 		items.forEach(item -> {
-				JsonObject itemObject = item.getAsJsonObject();
-				Record record = buildRecord(itemObject);
-				collectionPage.getItems().add(record);
+			JsonObject itemObject = item.getAsJsonObject();
+			Record record = buildRecord(itemObject);
+			collectionPage.getItems().add(record);
 		});
 
 		return collectionPage;
@@ -328,42 +331,41 @@ public class PocketBase {
 	 * Modifies an existing record given its recordId inside a protected collection with an authorization token.
 	 *
 	 * @param collectionName the collection name
-	 * @param jsonData       the json representing the data used to update the existing record
-	 * @param recordId       the id of the record to update
+	 * @param updatedRecord  the updated updatedRecord
 	 * @return the updated record
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String updateRecord(String collectionName, String jsonData, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public Record updateRecord(String collectionName, Record updatedRecord, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
-		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
+		String url = address + "/api/collections/" + collectionName + "/records/" + updatedRecord.getId();
 
 		// Open HTTP connection
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
 				.uri(URI.create(url))
 				.header("Content-Type", "application/json")
-				.method("PATCH", HttpRequest.BodyPublishers.ofString(jsonData)); // Write the JSON inside the request body
+				.method("PATCH", HttpRequest.BodyPublishers.ofString(gson.toJson(updatedRecord.getValues()))); // Write the JSON inside the request body
 
 		// Add the authorization token if present
 		if (authToken != null) {
 			requestBuilder = requestBuilder.header("Authorization", authToken);
 		}
 
-		return handleResponse(requestBuilder);
+		String response = handleResponse(requestBuilder);
+		return buildRecord(gson.fromJson(response, JsonObject.class));
 	}
 
 	/**
 	 * Modifies an existing record inside an unprotected collection.
 	 *
 	 * @param collectionName the collection name
-	 * @param jsonData       the json representing the data used to update the existing record
-	 * @param recordId       the id of the record to update
-	 * @return the json of the response
+	 * @param updatedRecord  the updated updatedRecord
+	 * @return the updated record
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String updateRecord(String collectionName, String jsonData, String recordId) throws IOException, PocketBaseException, InterruptedException {
-		return updateRecord(collectionName, jsonData, recordId, null);
+	public Record updateRecord(String collectionName, Record updatedRecord) throws IOException, PocketBaseException, InterruptedException {
+		return updateRecord(collectionName, updatedRecord, null);
 	}
 
 	/**

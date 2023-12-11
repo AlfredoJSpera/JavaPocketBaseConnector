@@ -14,7 +14,8 @@ public class Record {
 	public Record() {
 	}
 
-	public Record(Map<String, Object> values) {
+	public Record(String id, Map<String, Object> values) {
+		this.id = id;
 		this.values = values;
 	}
 
