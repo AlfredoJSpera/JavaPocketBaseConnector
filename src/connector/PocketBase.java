@@ -178,7 +178,7 @@ public class PocketBase {
 	 *
 	 * @param collectionName the collection name
 	 * @param data           the map containing the data to insert
-	 * @return the json of the response
+	 * @return the record created
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
@@ -191,7 +191,7 @@ public class PocketBase {
 	 *
 	 * @param collectionName the collection name
 	 * @param record         the record containing the data to insert
-	 * @return the json of the response
+	 * @return the record created
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
@@ -206,7 +206,7 @@ public class PocketBase {
 	 * @param collectionName the collection name
 	 * @param authToken      the authorization token
 	 * @param options        the options to filter the records, leave null for no options
-	 * @return the json of the response
+	 * @return a page with the records and info about the page
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
@@ -258,7 +258,7 @@ public class PocketBase {
 	 *
 	 * @param collectionName the collection name
 	 * @param options        the options to filter the records
-	 * @return the json of the response
+	 * @return a page with the records and info about the page
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
@@ -266,11 +266,14 @@ public class PocketBase {
 		return readAllRecords(collectionName, options, null);
 	}
 
+	// TODO: modify this method above with (String collectionName, PBOptions options)
+	// TODO: create a new method with (String collectionName, String authToken)
+
 	/**
 	 * Gets all the records from an unprotected collection.
 	 *
 	 * @param collectionName the collection name
-	 * @return the json of the response
+	 * @return a page with the records and info about the page
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
@@ -279,29 +282,16 @@ public class PocketBase {
 	}
 
 	/**
-	 * Gets one record from an unprotected collection.
-	 *
-	 * @param collectionName the collection name
-	 * @param recordId       the id of the record
-	 * @return the json of the response
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 * @throws IOException         the database is unreachable
-	 */
-	public String readOneRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
-		return readOneRecord(collectionName, recordId, null);
-	}
-
-	/**
 	 * Gets one record from a protected collection with an authorization token.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record
 	 * @param authToken      the authorization token
-	 * @return the json of the response
+	 * @return a page with the records and info about the page
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String readOneRecord(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public Record readOneRecord(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -317,21 +307,21 @@ public class PocketBase {
 					.header("Authorization", authToken);
 		}
 
-		return handleResponse(requestBuilder);
+		String response = handleResponse(requestBuilder);
+		return buildRecord(gson.fromJson(response, JsonObject.class));
 	}
 
 	/**
-	 * Modifies an existing record inside an unprotected collection.
+	 * Gets one record from an unprotected collection.
 	 *
 	 * @param collectionName the collection name
-	 * @param jsonData       the json representing the data used to update the existing record
-	 * @param recordId       the id of the record to update
-	 * @return the json of the response
+	 * @param recordId       the id of the record
+	 * @return the record found
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String updateRecord(String collectionName, String jsonData, String recordId) throws IOException, PocketBaseException, InterruptedException {
-		return updateRecord(collectionName, jsonData, recordId, null);
+	public Record readOneRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
+		return readOneRecord(collectionName, recordId, null);
 	}
 
 	/**
@@ -340,7 +330,7 @@ public class PocketBase {
 	 * @param collectionName the collection name
 	 * @param jsonData       the json representing the data used to update the existing record
 	 * @param recordId       the id of the record to update
-	 * @return the json of the response
+	 * @return the updated record
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
@@ -360,6 +350,20 @@ public class PocketBase {
 		}
 
 		return handleResponse(requestBuilder);
+	}
+
+	/**
+	 * Modifies an existing record inside an unprotected collection.
+	 *
+	 * @param collectionName the collection name
+	 * @param jsonData       the json representing the data used to update the existing record
+	 * @param recordId       the id of the record to update
+	 * @return the json of the response
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public String updateRecord(String collectionName, String jsonData, String recordId) throws IOException, PocketBaseException, InterruptedException {
+		return updateRecord(collectionName, jsonData, recordId, null);
 	}
 
 	/**
