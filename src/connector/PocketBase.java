@@ -7,8 +7,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * An abstraction of <a href="https://pocketbase.io/">PocketBase</a>, with all the methods to operate on its records.
@@ -47,46 +51,9 @@ public class PocketBase {
 
 		int statusCode = response.statusCode();
 
-		System.out.println(response.body());
-
 		// If there is an error, throw an exception
 		if (statusCode >= 400) {
-			JsonObject errorJson = gson.fromJson(response.body(), JsonObject.class);
-
-			// Get the error code and message
-			int errorCode = errorJson.get("code").getAsInt();
-			String errorMessage = errorJson.get("message").getAsString();
-
-			// Get the info code and message
-			JsonObject data = errorJson.get("data").getAsJsonObject();
-
-			if (!data.isEmpty()) {
-				String entrySet = data.entrySet().toString();
-				StringBuilder str = new StringBuilder();
-				for (int i = 1; i < entrySet.length(); i++) {
-					if (entrySet.charAt(i) == '=' && entrySet.charAt(i+1) == '{') {
-						break;
-					} else {
-						str.append(entrySet.charAt(i));
-					}
-				}
-
-				JsonObject entry = null;
-				try {
-					entry = data.get(str.toString()).getAsJsonObject();
-				} catch (Exception e) {
-					throw new PocketBaseException(errorCode, errorMessage, str.toString(), entrySet);
-				}
-
-
-				String infoCodeMeaning = entry.get("code").getAsString();
-				String infoMessage = entry.get("message").getAsString();
-
-				throw new PocketBaseException(errorCode, errorMessage, str.toString(), infoCodeMeaning, infoMessage);
-			} else {
-				throw new PocketBaseException(errorCode, errorMessage);
-			}
-
+			handleResponseError(response.body());
 		}
 
 		// Used for a successful delete request
@@ -95,6 +62,60 @@ public class PocketBase {
 		}
 
 		return response.body();
+	}
+
+	private void handleResponseError(String body) throws PocketBaseException {
+		JsonObject errorJson = gson.fromJson(body, JsonObject.class);
+
+		// Get the error code and message
+		int errorCode = errorJson.get("code").getAsInt();
+		String errorMessage = errorJson.get("message").getAsString();
+
+		// Get the info code and message
+		JsonObject data = errorJson.get("data").getAsJsonObject();
+
+		if (!data.isEmpty()) {
+			// Get a string to iterate through
+			String entrySetStr = data.entrySet().toString();
+
+			List<String> errorPoints = extractWords(entrySetStr);
+			List<ErrorInformationWrapper> infos = new ArrayList<>();
+
+			for (String errorPoint : errorPoints) {
+				JsonObject errorPointJson = null;
+				try {
+					errorPointJson = data.get(errorPoint).getAsJsonObject();
+					String infoCode = errorPointJson.get("code").getAsString();
+					String infoMessage = errorPointJson.get("message").getAsString();
+					infos.add(new ErrorInformationWrapper(errorPoint, infoCode, infoMessage));
+				} catch (Exception e) {
+					infos.add(new ErrorInformationWrapper(errorPoint, "Unknown Code", "Unknown Error"));
+				}
+			}
+
+			throw new PocketBaseException(errorCode, errorMessage, infos);
+		} else {
+			throw new PocketBaseException(errorCode, errorMessage);
+		}
+	}
+
+	private static List<String> extractWords(String input) {
+		List<String> resultList = new ArrayList<>();
+
+		// Define the regex pattern
+		Pattern pattern = Pattern.compile("\\b\\w+\\s*=\\{");
+
+		// Create a matcher object
+		Matcher matcher = pattern.matcher(input);
+
+		// Find all matches
+		while (matcher.find()) {
+			// Get the matched word and add it to the list
+			String matchedWord = matcher.group().trim();
+			resultList.add(matchedWord.substring(0, matchedWord.length() - 2));
+		}
+
+		return resultList;
 	}
 
 	/**
