@@ -36,6 +36,8 @@ public class PocketBase {
 
 	/**
 	 * Common method that handles and returns the response of the HTTP request.
+	 * @param requestBuilder the request builder
+	 * @return the json response of the HTTP request
 	 */
 	private String handleResponse(HttpRequest.Builder requestBuilder) throws IOException, InterruptedException, PocketBaseException {
 		// Build the request
@@ -60,19 +62,59 @@ public class PocketBase {
 	}
 
 	/**
-	 * Common method that tries to authenticate a user or admin, given its identity, password and the corresponding url.
+	 * Common method that tries to authenticate a user or admin
+	 * @param identity the identity (email)
+	 * @param password the password
+	 * @param userOrAdminUrl the url for the user or the admin
 	 */
 	private String authorize(String identity, String password, String userOrAdminUrl) throws IOException, InterruptedException, PocketBaseException {
 		// Create the input JSON
-		String jsonData = "{ \"identity\": \"" + identity + "\", \"password\": \"" + password + "\" }";
+		JsonObject inputJson = new JsonObject();
+		inputJson.addProperty("identity", identity);
+		inputJson.addProperty("password", password);
 
 		// Open HTTP connection
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
 				.uri(URI.create(userOrAdminUrl))
 				.header("Content-Type", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(jsonData));
+				.POST(HttpRequest.BodyPublishers.ofString(inputJson.toString()));
 
 		return handleResponse(requestBuilder);
+	}
+
+	/**
+	 * Common method that builds a record from a JSON object.
+	 * @param object the JSON object
+	 * @return the record built
+	 */
+	private Record buildRecord(JsonObject object) {
+		Record record = new Record();
+
+		// Iterate through the JSON object and set the values of the record
+		object.entrySet().forEach(entry -> {
+			switch (entry.getKey()) {
+				case "id":
+					record.setId(entry.getValue().getAsString());
+					break;
+				case "collectionId":
+					record.setCollectionId(entry.getValue().getAsString());
+					break;
+				case "collectionName":
+					record.setCollectionName(entry.getValue().getAsString());
+					break;
+				case "created":
+					record.setCreated(entry.getValue().getAsString());
+					break;
+				case "updated":
+					record.setUpdated(entry.getValue().getAsString());
+					break;
+				default:
+					record.getValues().put(entry.getKey(), entry.getValue().getAsString());
+					break;
+			}
+		});
+
+		return record;
 	}
 
 	private String urlEncode(String s) {
@@ -114,33 +156,7 @@ public class PocketBase {
 		String response = handleResponse(requestBuilder);
 
 		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
-		Record record = new Record();
-
-		// Iterate through the JSON object and set the values of the record
-		jsonObject.entrySet().forEach(entry -> {
-			switch (entry.getKey()) {
-				case "id":
-					record.setId(entry.getValue().getAsString());
-					break;
-				case "collectionId":
-					record.setCollectionId(entry.getValue().getAsString());
-					break;
-				case "collectionName":
-					record.setCollectionName(entry.getValue().getAsString());
-					break;
-				case "created":
-					record.setCreated(entry.getValue().getAsString());
-					break;
-				case "updated":
-					record.setUpdated(entry.getValue().getAsString());
-					break;
-				default:
-					record.getValues().put(entry.getKey(), entry.getValue());
-					break;
-			}
-		});
-
-		return record;
+		return buildRecord(jsonObject);
 	}
 
 	/**
@@ -214,26 +230,52 @@ public class PocketBase {
 					.header("Authorization", authToken);
 		}
 
+		// Send the request and get the response json
 		String response = handleResponse(requestBuilder);
 
-		// Get the "items" array
+		// Create the collection page
 		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
-		JsonArray itemsArray = jsonObject.getAsJsonArray("items");
-		return null;
+		CollectionPage collectionPage = new CollectionPage(
+				jsonObject.get("page").getAsString(),
+				jsonObject.get("perPage").getAsString(),
+				jsonObject.get("totalPages").getAsString(),
+				jsonObject.get("totalItems").getAsString()
+		);
 
+		// Items in the collection page
+		JsonArray items = jsonObject.getAsJsonArray("items");
+		items.forEach(item -> {
+				JsonObject itemObject = item.getAsJsonObject();
+				Record record = buildRecord(itemObject);
+				collectionPage.getItems().add(record);
+		});
+
+		return collectionPage;
 	}
 
 	/**
 	 * Gets all the records from an unprotected collection.
 	 *
 	 * @param collectionName the collection name
-	 * @param options        the options to filter the records, leave null for no options
+	 * @param options        the options to filter the records
 	 * @return the json of the response
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
 	public CollectionPage readAllRecords(String collectionName, String options) throws IOException, PocketBaseException, InterruptedException {
 		return readAllRecords(collectionName, options, null);
+	}
+
+	/**
+	 * Gets all the records from an unprotected collection.
+	 *
+	 * @param collectionName the collection name
+	 * @return the json of the response
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public CollectionPage readAllRecords(String collectionName) throws IOException, PocketBaseException, InterruptedException {
+		return readAllRecords(collectionName, null, null);
 	}
 
 	/**

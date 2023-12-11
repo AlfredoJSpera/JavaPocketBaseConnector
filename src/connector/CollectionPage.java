@@ -8,7 +8,10 @@ public class CollectionPage {
 	private String perPage;
 	private String totalPages;
 	private String totalItems;
-	private List<Record> list = new ArrayList<>();
+	private List<Record> items = new ArrayList<>();
+
+	public CollectionPage() {
+	}
 
 	public CollectionPage(String page, String perPage, String totalPages, String totalItems) {
 		this.page = page;
@@ -49,11 +52,22 @@ public class CollectionPage {
 		this.totalItems = totalItems;
 	}
 
-	public List<Record> getList() {
-		return list;
+	public List<Record> getItems() {
+		return items;
 	}
 
-	public void setList(List<Record> list) {
-		this.list = list;
+	public void setItems(List<Record> items) {
+		this.items = items;
+	}
+
+	@Override
+	public String toString() {
+		return "CollectionPage{" +
+				"page='" + page + '\'' +
+				", perPage='" + perPage + '\'' +
+				", totalPages='" + totalPages + '\'' +
+				", totalItems='" + totalItems + '\'' +
+				", items=" + items +
+				'}';
 	}
 }

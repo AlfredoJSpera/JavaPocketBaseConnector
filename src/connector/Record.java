@@ -14,6 +14,10 @@ public class Record {
 	public Record() {
 	}
 
+	public Record(Map<String, Object> values) {
+		this.values = values;
+	}
+
 	public Record(String id, String collectionId, String collectionName, String created, String updated) {
 		this.id = id;
 		this.collectionId = collectionId;
