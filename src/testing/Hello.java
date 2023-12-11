@@ -4,15 +4,13 @@ import connector.PocketBase;
 import connector.PocketBaseException;
 
 import java.io.IOException;
-import java.net.URL;
 
 public class Hello {
+	// adminroot@admin.com
+	// password123
 	public static void main(String[] args) throws IOException, InterruptedException, PocketBaseException {
-		PocketBase pb = new PocketBase(new URL("http://localhost:8090"));
-
-
-
-
+		PocketBase operations = new PocketBase("http://localhost:8090");
+		System.out.println(operations.adminAuthentication("adminroot@admin.com", "password123"));
 
 	}
 }

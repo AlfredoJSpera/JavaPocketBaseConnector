@@ -2,7 +2,6 @@ package connector;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -22,15 +21,6 @@ public class PocketBase {
 		this.address = address;
 	}
 
-	/**
-	 * Instantiates a new PocketBase connection.
-	 *
-	 * @param address the URL address of the database
-	 */
-	public PocketBase(URL address) {
-		this.address = address.toString();
-	}
-
 	public String getAddress() {
 		return address;
 	}
@@ -38,9 +28,9 @@ public class PocketBase {
 	// ==================== COMMON METHODS ====================
 
 	/**
-	 * Common method that handles the response of the HTTP request.
+	 * Common method that handles and returns the response of the HTTP request.
 	 */
-	private static String handleResponse(HttpRequest.Builder requestBuilder) throws IOException, InterruptedException, PocketBaseException {
+	private String handleResponse(HttpRequest.Builder requestBuilder) throws IOException, InterruptedException, PocketBaseException {
 		// Build the request
 		HttpRequest request = requestBuilder.build();
 
@@ -63,7 +53,7 @@ public class PocketBase {
 	/**
 	 * Common method that tries to authenticate a user or admin, given its identity, password and the corresponding url.
 	 */
-	private static String authorize(String identity, String password, String userOrAdminUrl) throws IOException, InterruptedException, PocketBaseException {
+	private String authorize(String identity, String password, String userOrAdminUrl) throws IOException, InterruptedException, PocketBaseException {
 		// Create the input JSON
 		String jsonData = "{ \"identity\": \"" + identity + "\", \"password\": \"" + password + "\" }";
 
@@ -76,14 +66,56 @@ public class PocketBase {
 		return handleResponse(requestBuilder);
 	}
 
-	private static String urlEncode(String s) {
+	private String urlEncode(String s) {
 		return s.replace(" ", "%20")
 				.replace("&", "%26")
 				.replace("|", "%7C");
 
 	}
 
+
 	// ==================== CRUD METHODS ====================
+
+	/**
+	 * Creates a new record inside a protected collection with an authorization token.
+	 *
+	 * @param collectionName the collection name
+	 * @param jsonData       the json of the data to insert
+	 * @param authToken      the authorization token
+	 * @return the json of the response
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public String createRecord(String collectionName, String jsonData, String authToken) throws IOException, PocketBaseException, InterruptedException {
+		// Create the URL
+		String url = address + "/api/collections/" + collectionName + "/records";
+
+		// Open HTTP connection
+		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.header("Content-Type", "application/json")
+				.POST(HttpRequest.BodyPublishers.ofString(jsonData)); // Write the JSON inside the request body
+
+		// Add the authorization token if present
+		if (authToken != null) {
+			requestBuilder = requestBuilder.header("Authorization", authToken);
+		}
+
+		return handleResponse(requestBuilder);
+	}
+
+	/**
+	 * Creates a new record inside an unprotected collection.
+	 *
+	 * @param collectionName the collection name
+	 * @param jsonData       the json of the data to insert
+	 * @return the json of the response
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public String createRecord(String collectionName, String jsonData) throws IOException, PocketBaseException, InterruptedException {
+		return createRecord(collectionName, jsonData, null);
+	}
 
 	/**
 	 * Gets all the records from an unprotected collection.
@@ -92,10 +124,10 @@ public class PocketBase {
 	 * @param options        the options to filter the records, leave null for no options
 	 * @return the json of the response
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 * @throws IOException   the database is unreachable
+	 * @throws IOException         the database is unreachable
 	 */
-	public synchronized String readAllRecords(String collectionName, String options) throws IOException, PocketBaseException, InterruptedException {
-		return readAllRecordsWithAuth(collectionName, options, null);
+	public String readAllRecords(String collectionName, String options) throws IOException, PocketBaseException, InterruptedException {
+		return readAllRecords(collectionName, options, null);
 	}
 
 	/**
@@ -108,7 +140,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public synchronized String readAllRecordsWithAuth(String collectionName, String options, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public String readAllRecords(String collectionName, String options, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -140,8 +172,8 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public synchronized String readOneRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
-		return readOneRecordWithAuth(collectionName, recordId, null);
+	public String readOneRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
+		return readOneRecord(collectionName, recordId, null);
 	}
 
 	/**
@@ -154,7 +186,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public synchronized String readOneRecordWithAuth(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public String readOneRecord(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -174,47 +206,6 @@ public class PocketBase {
 	}
 
 	/**
-	 * Creates a new record inside an unprotected collection.
-	 *
-	 * @param collectionName the collection name
-	 * @param jsonData       the json of the data to insert
-	 * @return the json of the response
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 * @throws IOException         the database is unreachable
-	 */
-	public synchronized String createRecord(String collectionName, String jsonData) throws IOException, PocketBaseException, InterruptedException {
-		return createRecordWithAuth(collectionName, jsonData, null);
-	}
-
-	/**
-	 * Creates a new record inside a protected collection with an authorization token.
-	 *
-	 * @param collectionName the collection name
-	 * @param jsonData       the json of the data to insert
-	 * @param authToken      the authorization token
-	 * @return the json of the response
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 * @throws IOException         the database is unreachable
-	 */
-	public synchronized String createRecordWithAuth(String collectionName, String jsonData, String authToken) throws IOException, PocketBaseException, InterruptedException {
-		// Create the URL
-		String url = address + "/api/collections/" + collectionName + "/records";
-
-		// Open HTTP connection
-		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-				.uri(URI.create(url))
-				.header("Content-Type", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(jsonData)); // Write the JSON inside the request body
-
-		// Add the authorization token if present
-		if (authToken != null) {
-			requestBuilder = requestBuilder.header("Authorization", authToken);
-		}
-
-		return handleResponse(requestBuilder);
-	}
-
-	/**
 	 * Modifies an existing record inside an unprotected collection.
 	 *
 	 * @param collectionName the collection name
@@ -224,8 +215,8 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public synchronized String updateRecord(String collectionName, String jsonData, String recordId) throws IOException, PocketBaseException, InterruptedException {
-		return updateRecordWithAuth(collectionName, jsonData, recordId, null);
+	public String updateRecord(String collectionName, String jsonData, String recordId) throws IOException, PocketBaseException, InterruptedException {
+		return updateRecord(collectionName, jsonData, recordId, null);
 	}
 
 	/**
@@ -238,7 +229,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public synchronized String updateRecordWithAuth(String collectionName, String jsonData, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public String updateRecord(String collectionName, String jsonData, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -265,8 +256,8 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public synchronized String deleteRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
-		return deleteRecordWithAuth(collectionName, recordId, null);
+	public String deleteRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
+		return deleteRecord(collectionName, recordId, null);
 	}
 
 	/**
@@ -278,7 +269,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public synchronized String deleteRecordWithAuth(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public String deleteRecord(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -298,6 +289,9 @@ public class PocketBase {
 		return handleResponse(requestBuilder);
 	}
 
+	// ==================== AUTHENTICATION METHODS ====================
+
+
 	/**
 	 * Authenticate a user, given its identity and password.
 	 *
@@ -307,7 +301,7 @@ public class PocketBase {
 	 * @return the json of the response
 	 * @throws IOException the database is unreachable
 	 */
-	public synchronized String userAuthorization(String usersCollectionName, String identity, String password) throws IOException, PocketBaseException, InterruptedException {
+	public String userAuthentication(String usersCollectionName, String identity, String password) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String usersUrl = address + "/api/collections/" + usersCollectionName + "/auth-with-password";
 
@@ -322,13 +316,14 @@ public class PocketBase {
 	 * @return the json of the response
 	 * @throws IOException the database is unreachable
 	 */
-	public synchronized String adminAuthorization(String identity, String password) throws IOException, PocketBaseException, InterruptedException {
+	public String adminAuthentication(String identity, String password) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String adminsUrl = address + "/api/admins/auth-with-password";
 
 		// Create the input JSON
 		return authorize(identity, password, adminsUrl);
 	}
+
 
 
 }
