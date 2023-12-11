@@ -64,6 +64,11 @@ public class PocketBase {
 		return response.body();
 	}
 
+	/**
+	 * Method that handles the errors of the HTTP request.
+	 *
+	 * @param body the json body of the response
+	 */
 	private void handleResponseError(String body) throws PocketBaseException {
 		JsonObject errorJson = gson.fromJson(body, JsonObject.class);
 
@@ -78,7 +83,7 @@ public class PocketBase {
 			// Get a string to iterate through
 			String entrySetStr = data.entrySet().toString();
 
-			List<String> errorPoints = extractWords(entrySetStr);
+			List<String> errorPoints = extractWords(entrySetStr, "\\b\\w+\\s*=\\{");
 			List<ErrorInformationWrapper> infos = new ArrayList<>();
 
 			for (String errorPoint : errorPoints) {
@@ -93,17 +98,25 @@ public class PocketBase {
 				}
 			}
 
+			// Exception with specific errors
 			throw new PocketBaseException(errorCode, errorMessage, infos);
 		} else {
+			// For general errors
 			throw new PocketBaseException(errorCode, errorMessage);
 		}
 	}
 
-	private static List<String> extractWords(String input) {
+	/**
+	 * Extracts all the words from a string that match a regex.
+	 *
+	 * @param input the input string
+	 * @return the list of words
+	 */
+	private static List<String> extractWords(String input, String regex) {
 		List<String> resultList = new ArrayList<>();
 
 		// Define the regex pattern
-		Pattern pattern = Pattern.compile("\\b\\w+\\s*=\\{");
+		Pattern pattern = Pattern.compile(regex);
 
 		// Create a matcher object
 		Matcher matcher = pattern.matcher(input);
@@ -176,10 +189,19 @@ public class PocketBase {
 		return record;
 	}
 
+	/**
+	 * Encodes a string to be used in a URL.
+	 * @param s the string to encode
+	 * @return the encoded string
+	 */
 	private String urlEncode(String s) {
 		return s.replace(" ", "%20")
-				.replace("&", "%26")
-				.replace("|", "%7C");
+				.replace("&&", "%26%26")
+				.replace("|", "%7C")
+				.replace("<", "%3C")
+				.replace(">", "%3E")
+				.replace("-", "%2D")
+				.replace("\"", "%22");
 
 	}
 
@@ -259,22 +281,22 @@ public class PocketBase {
 
 
 	/**
-	 * Gets all the records from a protected collection with the authorization token.
+	 * Gets all the records from a protected collection with the authorization token and query options.
 	 *
 	 * @param collectionName the collection name
+	 * @param queryOptions   the options for the query of the records
 	 * @param authToken      the authorization token
-	 * @param options        the options to filter the records, leave null for no options
 	 * @return a page with the records and info about the page
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public CollectionPage readAllRecords(String collectionName, String options, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public CollectionPage readAllRecords(String collectionName, PBQuery queryOptions, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
 		// Add the options if present
-		if (options != null)
-			url = url + "?" + options;
+		if (queryOptions != null)
+			url = url + "?" + queryOptions;
 
 		// Open HTTP connection
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
@@ -312,20 +334,30 @@ public class PocketBase {
 	}
 
 	/**
-	 * Gets all the records from an unprotected collection.
+	 * Gets all the records from a protected collection with the authorization token.
 	 *
 	 * @param collectionName the collection name
-	 * @param options        the options to filter the records
+	 * @param authToken      the authorization token
 	 * @return a page with the records and info about the page
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public CollectionPage readAllRecords(String collectionName, String options) throws IOException, PocketBaseException, InterruptedException {
-		return readAllRecords(collectionName, options, null);
+	public CollectionPage readAllRecords(String collectionName, String authToken) throws IOException, PocketBaseException, InterruptedException {
+		return readAllRecords(collectionName, null, authToken);
 	}
 
-	// TODO: modify this method above with (String collectionName, PBOptions options)
-	// TODO: create a new method with (String collectionName, String authToken)
+	/**
+	 * Gets all the records from an unprotected collection with query options.
+	 *
+	 * @param collectionName the collection name
+	 * @param queryOptions   the options for the query of the records
+	 * @return a page with the records and info about the page
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public CollectionPage readAllRecords(String collectionName, PBQuery queryOptions) throws IOException, PocketBaseException, InterruptedException {
+		return readAllRecords(collectionName, queryOptions, null);
+	}
 
 	/**
 	 * Gets all the records from an unprotected collection.
