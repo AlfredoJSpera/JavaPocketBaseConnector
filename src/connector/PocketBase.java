@@ -477,11 +477,28 @@ public class PocketBase {
 	 * @return the json of the response
 	 * @throws IOException the database is unreachable
 	 */
-	public String userAuthentication(String usersCollectionName, String identity, String password) throws IOException, PocketBaseException, InterruptedException {
+	public UserData userAuthentication(String usersCollectionName, String identity, String password) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String usersUrl = address + "/api/collections/" + usersCollectionName + "/auth-with-password";
 
-		return authorize(identity, password, usersUrl);
+		String response = authorize(identity, password, usersUrl);
+
+		JsonObject json = gson.fromJson(response, JsonObject.class);
+		JsonObject record = json.getAsJsonObject("record");
+		String token = json.get("token").getAsString();
+
+		return new UserData(
+				record.get("id").getAsString(),
+				record.get("created").getAsString(),
+				record.get("updated").getAsString(),
+				record.get("username").getAsString(),
+				record.get("email").getAsString(),
+				record.get("emailVisibility").getAsBoolean(),
+				record.get("verified").getAsBoolean(),
+				token,
+				record.get("collectionId").getAsString(),
+				record.get("collectionName").getAsString()
+		);
 	}
 
 	/**
@@ -496,7 +513,6 @@ public class PocketBase {
 		// Create the URL
 		String adminsUrl = address + "/api/admins/auth-with-password";
 
-		// Create the input JSON
 		return authorize(identity, password, adminsUrl);
 	}
 

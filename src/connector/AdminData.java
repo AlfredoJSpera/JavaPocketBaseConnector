@@ -1,16 +1,18 @@
 package connector;
 
-public class Auth {
+public class AdminData {
 	private String id;
 	private String created;
 	private String updated;
+	private int avatar;
 	private String email;
 	private String token;
 
-	public Auth(String id, String created, String updated, String email, String token) {
+	public AdminData(String id, String created, String updated, int avatar, String email, String token) {
 		this.id = id;
 		this.created = created;
 		this.updated = updated;
+		this.avatar = avatar;
 		this.email = email;
 		this.token = token;
 	}
@@ -39,6 +41,14 @@ public class Auth {
 		this.updated = updated;
 	}
 
+	public int getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(int avatar) {
+		this.avatar = avatar;
+	}
+
 	public String getEmail() {
 		return email;
 	}
@@ -53,5 +63,17 @@ public class Auth {
 
 	public void setToken(String token) {
 		this.token = token;
+	}
+
+	@Override
+	public String toString() {
+		return "AdminData{" +
+				"id='" + id + '\'' +
+				", created='" + created + '\'' +
+				", updated='" + updated + '\'' +
+				", avatar=" + avatar +
+				", email='" + email + '\'' +
+				", token='" + token + '\'' +
+				'}';
 	}
 }

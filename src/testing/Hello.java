@@ -15,8 +15,7 @@ public class Hello {
 
 	public static void main(String[] args) throws IOException, InterruptedException, PocketBaseException {
 		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
-		pb.adminAuthentication("lkjae@wkl.co", "");
-
+		System.out.println(pb.userAuthentication("users", "abc@kljwe.com", "Password"));
 
 	}
 }
