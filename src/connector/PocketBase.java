@@ -290,7 +290,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public CollectionPage readAllRecords(String collectionName, PBQuery queryOptions, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public CollectionPage readAllRecords(String collectionName, String authToken, PBQuery queryOptions) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -343,7 +343,7 @@ public class PocketBase {
 	 * @throws IOException         the database is unreachable
 	 */
 	public CollectionPage readAllRecords(String collectionName, String authToken) throws IOException, PocketBaseException, InterruptedException {
-		return readAllRecords(collectionName, null, authToken);
+		return readAllRecords(collectionName, authToken, null);
 	}
 
 	/**
@@ -356,7 +356,7 @@ public class PocketBase {
 	 * @throws IOException         the database is unreachable
 	 */
 	public CollectionPage readAllRecords(String collectionName, PBQuery queryOptions) throws IOException, PocketBaseException, InterruptedException {
-		return readAllRecords(collectionName, queryOptions, null);
+		return readAllRecords(collectionName, null, queryOptions);
 	}
 
 	/**
