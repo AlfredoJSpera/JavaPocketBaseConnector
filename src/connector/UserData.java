@@ -1,5 +1,8 @@
 package connector;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class UserData {
 	private String id;
 	private String created;
@@ -11,9 +14,13 @@ public class UserData {
 	private String token;
 	private String collectionId;
 	private String collectionName;
+	private Map<String, Object> values = new HashMap<>();
+
+	public UserData() {
+	}
 
 	public UserData(String id, String created, String updated, String username, String email, boolean emailVisibility,
-	                boolean verified, String token, String collectionId, String collectionName) {
+	                boolean verified, String token, String collectionId, String collectionName, Map<String, Object> values) {
 		this.id = id;
 		this.created = created;
 		this.updated = updated;
@@ -24,6 +31,7 @@ public class UserData {
 		this.token = token;
 		this.collectionId = collectionId;
 		this.collectionName = collectionName;
+		this.values = values;
 	}
 
 	public String getId() {
@@ -106,6 +114,14 @@ public class UserData {
 		this.collectionName = collectionName;
 	}
 
+	public Map<String, Object> getValues() {
+		return values;
+	}
+
+	public void setValues(Map<String, Object> values) {
+		this.values = values;
+	}
+
 	@Override
 	public String toString() {
 		return "UserData{" +
@@ -119,6 +135,7 @@ public class UserData {
 				", token='" + token + '\'' +
 				", collectionId='" + collectionId + '\'' +
 				", collectionName='" + collectionName + '\'' +
+				", values=" + values +
 				'}';
 	}
 }

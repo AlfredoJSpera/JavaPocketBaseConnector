@@ -487,18 +487,45 @@ public class PocketBase {
 		JsonObject record = json.getAsJsonObject("record");
 		String token = json.get("token").getAsString();
 
-		return new UserData(
-				record.get("id").getAsString(),
-				record.get("created").getAsString(),
-				record.get("updated").getAsString(),
-				record.get("username").getAsString(),
-				record.get("email").getAsString(),
-				record.get("emailVisibility").getAsBoolean(),
-				record.get("verified").getAsBoolean(),
-				token,
-				record.get("collectionId").getAsString(),
-				record.get("collectionName").getAsString()
-		);
+		UserData userData = new UserData();
+
+		// Iterate through the JSON object and set the values of the record
+		record.entrySet().forEach(entry -> {
+			switch (entry.getKey()) {
+				case "id":
+					userData.setId(entry.getValue().getAsString());
+					break;
+				case "collectionId":
+					userData.setCollectionId(entry.getValue().getAsString());
+					break;
+				case "collectionName":
+					userData.setCollectionName(entry.getValue().getAsString());
+					break;
+				case "created":
+					userData.setCreated(entry.getValue().getAsString());
+					break;
+				case "updated":
+					userData.setUpdated(entry.getValue().getAsString());
+					break;
+				case "username":
+					userData.setUsername(entry.getValue().getAsString());
+					break;
+				case "email":
+					userData.setEmail(entry.getValue().getAsString());
+					break;
+				case "emailVisibility":
+					userData.setEmailVisibility(entry.getValue().getAsBoolean());
+					break;
+				case "verified":
+					userData.setVerified(entry.getValue().getAsBoolean());
+					break;
+				default:
+					userData.getValues().put(entry.getKey(), entry.getValue().getAsString());
+					break;
+			}
+		});
+
+		return userData;
 	}
 
 	/**
@@ -509,11 +536,24 @@ public class PocketBase {
 	 * @return the json of the response
 	 * @throws IOException the database is unreachable
 	 */
-	public String adminAuthentication(String identity, String password) throws IOException, PocketBaseException, InterruptedException {
+	public AdminData adminAuthentication(String identity, String password) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String adminsUrl = address + "/api/admins/auth-with-password";
 
-		return authorize(identity, password, adminsUrl);
+		String response = authorize(identity, password, adminsUrl);
+
+		JsonObject json = gson.fromJson(response, JsonObject.class);
+		JsonObject admin = json.getAsJsonObject("admin");
+		String token = json.get("token").getAsString();
+
+		return new AdminData(
+				admin.get("id").getAsString(),
+				admin.get("created").getAsString(),
+				admin.get("updated").getAsString(),
+				admin.get("avatar").getAsInt(),
+				admin.get("email").getAsString(),
+				token
+		);
 	}
 
 
