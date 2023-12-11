@@ -50,9 +50,30 @@ public class PocketBase {
 		int statusCode = response.statusCode();
 
 		// If there is an error, throw an exception
-		if (statusCode >= 400) {
-			throw new PocketBaseException(response.body());
+		if (statusCode == 400) {
+			// Creation error
+
+			JsonObject errorJson = gson.fromJson(response.body(), JsonObject.class);
+
+			int errorCode = errorJson.get("code").getAsInt();
+			String errorMessage = errorJson.get("message").getAsString();
+
+			JsonObject data = errorJson.get("data").getAsJsonObject()
+					.get("title").getAsJsonObject();
+
+			String infoCodeMeaning = data.get("code").getAsString();
+			String infoMessage = data.get("message").getAsString();
+
+			throw new PocketBaseException(errorCode, errorMessage, infoCodeMeaning, infoMessage);
+		} else if (statusCode >= 401) {
+			JsonObject errorJson = gson.fromJson(response.body(), JsonObject.class);
+
+			String errorCode = errorJson.get("code").getAsString();
+			String errorMessage = errorJson.get("message").getAsString();
+
+			throw new PocketBaseException(errorCode, errorMessage);
 		}
+
 
 		// Used for a successful delete request
 		if (statusCode == 204) {
