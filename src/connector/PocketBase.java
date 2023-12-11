@@ -54,9 +54,9 @@ public class PocketBase {
 			throw new PocketBaseException(response.body());
 		}
 
-		// If the response is 204, return a JSON with the code and a message
+		// Used for a successful delete request
 		if (statusCode == 204) {
-			return "{\"code\":" + 204 + ", \"message\": \"Successful.\"}";
+			return "204";
 		}
 
 		return response.body();
@@ -369,28 +369,15 @@ public class PocketBase {
 	}
 
 	/**
-	 * Deletes an existing record inside an unprotected collection.
-	 *
-	 * @param collectionName the collection name
-	 * @param recordId       the id of the record to delete
-	 * @return the json of the response
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 * @throws IOException         the database is unreachable
-	 */
-	public String deleteRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
-		return deleteRecord(collectionName, recordId, null);
-	}
-
-	/**
 	 * Deletes an existing record inside a protected collection with an authorization token.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record to delete
-	 * @return the json of the response
+	 * @return true if the record has been deleted, otherwise an exception is thrown
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String deleteRecord(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public boolean deleteRecord(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -407,7 +394,20 @@ public class PocketBase {
 		}
 
 
-		return handleResponse(requestBuilder);
+		return handleResponse(requestBuilder).equals("204");
+	}
+
+	/**
+	 * Deletes an existing record inside an unprotected collection.
+	 *
+	 * @param collectionName the collection name
+	 * @param recordId       the id of the record to delete
+	 * @return true if the record has been deleted, otherwise an exception is thrown
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public boolean deleteRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
+		return deleteRecord(collectionName, recordId, null);
 	}
 
 	// ==================== AUTHENTICATION METHODS ====================
