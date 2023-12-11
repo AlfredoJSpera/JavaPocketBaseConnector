@@ -1,17 +1,13 @@
 package connector;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpRequest;
-
-public class PocketBaseAuth {
+public class Auth {
 	private String id;
 	private String created;
 	private String updated;
 	private String email;
 	private String token;
 
-	public PocketBaseAuth(String id, String created, String updated, String email, String token) {
+	public Auth(String id, String created, String updated, String email, String token) {
 		this.id = id;
 		this.created = created;
 		this.updated = updated;

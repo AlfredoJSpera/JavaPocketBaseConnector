@@ -3,13 +3,32 @@ package connector;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PocketBaseRecord {
+public class Record {
 	private String id;
 	private String collectionId;
 	private String collectionName;
 	private String created;
 	private String updated;
-	private Map<String, Object> nameValue = new HashMap<>();
+	private Map<String, Object> values = new HashMap<>();
+
+	public Record() {
+	}
+
+	public Record(String id, String collectionId, String collectionName, String created, String updated) {
+		this.id = id;
+		this.collectionId = collectionId;
+		this.collectionName = collectionName;
+		this.created = created;
+		this.updated = updated;
+	}
+
+	public Map<String, Object> getValues() {
+		return values;
+	}
+
+	public void setValues(Map<String, Object> values) {
+		this.values = values;
+	}
 
 	public String getId() {
 		return id;
@@ -49,5 +68,17 @@ public class PocketBaseRecord {
 
 	public void setUpdated(String updated) {
 		this.updated = updated;
+	}
+
+	@Override
+	public String toString() {
+		return "Record{" +
+				"id='" + id + '\'' +
+				", collectionId='" + collectionId + '\'' +
+				", collectionName='" + collectionName + '\'' +
+				", created='" + created + '\'' +
+				", updated='" + updated + '\'' +
+				", values=" + values +
+				'}';
 	}
 }

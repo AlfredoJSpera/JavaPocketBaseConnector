@@ -1,16 +1,23 @@
 package connector;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 
 /**
  * An abstraction of <a href="https://pocketbase.io/">PocketBase</a>, with all the methods to operate on its records.
  */
 public class PocketBase {
 	private final String address;
+	private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
 	/**
 	 * Instantiates a new PocketBase connection.
@@ -40,12 +47,14 @@ public class PocketBase {
 		int statusCode = response.statusCode();
 
 		// If there is an error, throw an exception
-		if (statusCode >= 400)
+		if (statusCode >= 400) {
 			throw new PocketBaseException(response.body());
+		}
 
 		// If the response is 204, return a JSON with the code and a message
-		if (statusCode == 204)
+		if (statusCode == 204) {
 			return "{\"code\":" + 204 + ", \"message\": \"Successful.\"}";
+		}
 
 		return response.body();
 	}
@@ -80,13 +89,13 @@ public class PocketBase {
 	 * Creates a new record inside a protected collection with an authorization token.
 	 *
 	 * @param collectionName the collection name
-	 * @param jsonData       the json of the data to insert
+	 * @param data       the json of the data to insert
 	 * @param authToken      the authorization token
 	 * @return the json of the response
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String createRecord(String collectionName, String jsonData, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public Record createRecord(String collectionName, Map<String, Object> data, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -94,27 +103,57 @@ public class PocketBase {
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
 				.uri(URI.create(url))
 				.header("Content-Type", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(jsonData)); // Write the JSON inside the request body
+				.POST(HttpRequest.BodyPublishers.ofString(gson.toJson(data))); // Write the JSON inside the request body
 
 		// Add the authorization token if present
 		if (authToken != null) {
 			requestBuilder = requestBuilder.header("Authorization", authToken);
 		}
 
-		return handleResponse(requestBuilder);
+		// Send the request and get the response json
+		String response = handleResponse(requestBuilder);
+
+		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
+		Record record = new Record();
+
+		// Iterate through the JSON object and set the values of the record
+		jsonObject.entrySet().forEach(entry -> {
+			switch (entry.getKey()) {
+				case "id":
+					record.setId(entry.getValue().getAsString());
+					break;
+				case "collectionId":
+					record.setCollectionId(entry.getValue().getAsString());
+					break;
+				case "collectionName":
+					record.setCollectionName(entry.getValue().getAsString());
+					break;
+				case "created":
+					record.setCreated(entry.getValue().getAsString());
+					break;
+				case "updated":
+					record.setUpdated(entry.getValue().getAsString());
+					break;
+				default:
+					record.getValues().put(entry.getKey(), entry.getValue());
+					break;
+			}
+		});
+
+		return record;
 	}
 
 	/**
 	 * Creates a new record inside an unprotected collection.
 	 *
 	 * @param collectionName the collection name
-	 * @param jsonData       the json of the data to insert
+	 * @param data       the json of the data to insert
 	 * @return the json of the response
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String createRecord(String collectionName, String jsonData) throws IOException, PocketBaseException, InterruptedException {
-		return createRecord(collectionName, jsonData, null);
+	public Record createRecord(String collectionName, Map<String, Object> data) throws IOException, PocketBaseException, InterruptedException {
+		return createRecord(collectionName, data, null);
 	}
 
 	/**
@@ -126,7 +165,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String readAllRecords(String collectionName, String options) throws IOException, PocketBaseException, InterruptedException {
+	public CollectionPage readAllRecords(String collectionName, String options) throws IOException, PocketBaseException, InterruptedException {
 		return readAllRecords(collectionName, options, null);
 	}
 
@@ -140,7 +179,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public String readAllRecords(String collectionName, String options, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public CollectionPage readAllRecords(String collectionName, String options, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -160,7 +199,13 @@ public class PocketBase {
 					.header("Authorization", authToken);
 		}
 
-		return handleResponse(requestBuilder);
+		String response = handleResponse(requestBuilder);
+
+		// Get the "items" array
+		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
+		JsonArray itemsArray = jsonObject.getAsJsonArray("items");
+		return null;
+
 	}
 
 	/**
