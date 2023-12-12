@@ -23,7 +23,10 @@ import java.util.regex.Pattern;
  */
 public class PocketBase {
 	private final String address;
-	private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+	private final Gson gson = new GsonBuilder()
+			.setPrettyPrinting()
+			.serializeNulls()
+			.create();
 
 	/**
 	 * Instantiates a new PocketBase connection.
@@ -185,7 +188,11 @@ public class PocketBase {
 					record.setUpdated(entry.getValue().getAsString());
 					break;
 				default:
-					record.getValues().put(entry.getKey(), entry.getValue().getAsString());
+					// If the value is null, set it to null, otherwise set it to the string value
+					if (entry.getValue().toString().equals("[]"))
+						record.getValues().put(entry.getKey(), null);
+					else
+						record.getValues().put(entry.getKey(), entry.getValue().getAsString());
 					break;
 			}
 		});
@@ -259,7 +266,7 @@ public class PocketBase {
 
 	/**
 	 * Creates a new record inside a protected collection with an authorization token and files.
-	 * This method uses the <code>multipart/form-data</code> content type.
+	 * <b>This method uses the multipart/form-data content type.</b>
 	 *
 	 * @param collectionName the collection name
 	 * @param recordValues   the map containing the values to insert
@@ -303,6 +310,20 @@ public class PocketBase {
 		return buildRecord(jsonObject);
 	}
 
+	/**
+	 * Creates a new record inside a collection with files.
+	 * <b>This method uses the multipart/form-data content type.</b>
+	 *
+	 * @param collectionName the collection name
+	 * @param recordValues   the map containing the values to insert
+	 * @param files          the map containing the files to insert, where the String is the name of the column in the db
+	 * @return the record created
+	 * @throws IOException         the database is unreachable
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 */
+	public PBRecord createRecordWithFiles(String collectionName, Map<String, Object> recordValues, Map<String, File> files) throws IOException, PocketBaseException, InterruptedException {
+		return createRecordWithFiles(collectionName, recordValues, files, null);
+	}
 
 	/**
 	 * Gets all the records from a protected collection with the authorization token and query options.
@@ -452,6 +473,9 @@ public class PocketBase {
 	public PBRecord updateRecord(String collectionName, PBRecord updatedRecord, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + updatedRecord.getId();
+
+		System.out.println(updatedRecord.getValues());
+		System.out.println(gson.toJson(updatedRecord.getValues()));
 
 		// Open HTTP connection
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()

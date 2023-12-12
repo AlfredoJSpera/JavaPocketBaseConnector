@@ -1,5 +1,6 @@
 package testing;
 
+import com.google.gson.JsonNull;
 import connector.*;
 import connector.PBRecord;
 
@@ -23,15 +24,22 @@ public class Hello {
 	public static void main(String[] args) throws Exception {
 		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
-		String token = pb.adminAuthentication(ADMIN_EMAIL, ADMIN_PASS).getToken();
+		//String token = pb.adminAuthentication(ADMIN_EMAIL, ADMIN_PASS).getToken();
 
+		PBRecord r = pb.readOneRecord(COLLECTION, RECORD);
+		r.getValues().put("image", null);
+		r = pb.updateRecord(COLLECTION, r);
+
+		/*
 		Map<String, Object> values = new HashMap<>();
-		values.put("title", "Aurora");
-		values.put("content", "Aurora is a natural light display in the Earth's sky, predominantly seen in the high-latitude regions (around the Arctic and Antarctic).");
-		values.put("views", 211);
-		Map<String, File> files = Map.of("image", new File("C:/Users/Alfredo/Desktop/aurora.png"));
+		values.put("title", "Waters");
+		values.put("content", "Photos of water.");
+		values.put("views", 62);
+		Map<String, File> files = new HashMap<>();
+		values.put("image", new File("C:/Users/Alfredo/Desktop/the-giants-causeway.png"));
 
-		PBRecord r = pb.createRecordWithFiles(COLLECTION, values, files, token);
+		PBRecord r = pb.createRecordWithFiles(COLLECTION, values, files);
 		System.out.println("r = " + r);
+		*/
 	}
 }
