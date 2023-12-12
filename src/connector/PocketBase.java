@@ -699,5 +699,20 @@ public class PocketBase {
 		return downloadFile(collectionName, recordId, fileName, savePath, thumb, null);
 	}
 
+	/**
+	 * Downloads a file to the local machine from a record inside a collection.
+	 *
+	 * @param collectionName the collection name
+	 * @param recordId       the id of the record
+	 * @param fileName       the name of the file
+	 * @param savePath       the path where to save the file
+	 * @return the downloaded file
+	 * @throws IOException         the database is unreachable
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 */
+	public File downloadFile(String collectionName, String recordId, String fileName, String savePath) throws IOException, PocketBaseException, InterruptedException {
+		return downloadFile(collectionName, recordId, fileName, savePath, null, null);
+	}
+
 
 }
