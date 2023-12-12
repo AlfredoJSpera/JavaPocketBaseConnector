@@ -189,7 +189,7 @@ public class PocketBase {
 					break;
 				default:
 					// If the value is null, set it to null, otherwise set it to the string value
-					if (entry.getValue().toString().equals("[]"))
+					if (entry.getValue().toString().equals("[]") || entry.getValue().toString().equals("{}") || entry.getValue() instanceof JsonNull)
 						record.getValues().put(entry.getKey(), null);
 					else
 						record.getValues().put(entry.getKey(), entry.getValue().getAsString());
@@ -358,8 +358,6 @@ public class PocketBase {
 		// Send the request and get the response json
 		String response = handleResponse(requestBuilder);
 
-		System.out.println(response);
-
 		// Create the collection page
 		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
 		PBCollection collectionPage = new PBCollection(
@@ -473,9 +471,6 @@ public class PocketBase {
 	public PBRecord updateRecord(String collectionName, PBRecord updatedRecord, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + updatedRecord.getId();
-
-		System.out.println(updatedRecord.getValues());
-		System.out.println(gson.toJson(updatedRecord.getValues()));
 
 		// Open HTTP connection
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
