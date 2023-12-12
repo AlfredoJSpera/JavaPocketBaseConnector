@@ -1,10 +1,10 @@
 package testing;
 
-import connector.PBQuery;
-import connector.PocketBase;
-import connector.PocketBaseException;
+import connector.*;
 import connector.Record;
 
+import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -16,60 +16,34 @@ public class Hello {
 	private static final String USER_EMAIL = "abc@kljwe.com";
 	private static final String USER_PASS = "Password";
 
-	public static void main(String[] args) throws IOException, InterruptedException, PocketBaseException {
-		// Creates a PocketBase instance
+	private static final String COLLECTION = "posts";
+	private static final String RECORD = "a08eq0qsow53pvw";
+
+	public static void main(String[] args) throws Exception {
 		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
-		List<Record> list = pb.readAllRecords("posts",
-				new PBQuery(
-					"-views",
-					"views > 60 && title = \"Hello World\"",
-					null
-				)
-		).getItems();
-
-		printAll("Filtered list:", list);
+		String token = pb.adminAuthentication(ADMIN_EMAIL, ADMIN_PASS).getToken();
 
 
-		list = pb.readAllRecords("posts").getItems();
+		Record record = pb.readOneRecord(COLLECTION, RECORD, token);
+		Map<String, Object> values = record.getValues();
+		String imageName = (String) values.get("image");
 
-		printAll("Normal list:", list);
+		System.out.println(values.get("title") + ", " + values.get("content") + ", " + values.get("views") + ", "
+				+ record.getCreated() + ", " + imageName);
 
-		list = pb.readAllRecords("posts",
-				new PBQuery(
-					1,
-					2
-				)
-		).getItems();
+		File file = pb.downloadFile(COLLECTION, RECORD, imageName, "C:/Users/Alfredo/Desktop/test.png", token);
+		System.out.println("Downloaded file to: " + file.getAbsolutePath());
+		openFileInDefaultViewer(file);
 
-		printAll("Paginated list (part 1):", list);
-
-		list = pb.readAllRecords("posts",
-				new PBQuery(
-						2,
-						2
-				)
-		).getItems();
-
-		printAll("Paginated list (part 2):", list);
-
-		list = pb.readAllRecords("posts",
-				new PBQuery(
-						"views",
-						null,
-						null
-				)
-		).getItems();
-
-		printAll("Sorted list:", list);
 	}
 
-	public static void printAll(String title, List<Record> list) {
-		System.out.println(title);
-		for (Record record : list) {
-			Map<String, Object> values = record.getValues();
-			System.out.println(values.get("title") + ", " + values.get("content") + ", " + values.get("views") + ", " + record.getCreated());
+	public static void openFileInDefaultViewer(File file) throws Exception {
+		if (Desktop.isDesktopSupported()) {
+			Desktop desktop = Desktop.getDesktop();
+			desktop.open(file);
+		} else {
+			System.out.println("Opening files is not supported on this platform.");
 		}
-		System.out.println("--------------------");
 	}
 }

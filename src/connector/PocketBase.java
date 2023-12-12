@@ -2,11 +2,18 @@ package connector;
 
 import com.google.gson.*;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -313,6 +320,8 @@ public class PocketBase {
 		// Send the request and get the response json
 		String response = handleResponse(requestBuilder);
 
+		System.out.println(response);
+
 		// Create the collection page
 		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
 		CollectionPage collectionPage = new CollectionPage(
@@ -588,5 +597,34 @@ public class PocketBase {
 		);
 	}
 
+	// ==================== FILE HANDLING ====================
+
+	public File downloadFile(String collectionName, String recordId, String fileName, String savePath, String authToken) throws IOException, PocketBaseException, InterruptedException {
+		String url = address + "/api/files/" + collectionName + "/" + recordId + "/" + fileName;
+
+		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.GET();
+
+		// Add the authorization token if present
+		if (authToken != null) {
+			requestBuilder = requestBuilder
+					.header("Content-Type", "application/json")
+					.header("Authorization", authToken);
+		}
+
+		HttpRequest request = requestBuilder.build();
+
+		HttpResponse<InputStream> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+		try (InputStream in = response.body()) {
+			System.out.println("Downloading from " + url);
+
+			Path outputPath = Path.of(savePath);
+			Files.copy(in, outputPath, StandardCopyOption.REPLACE_EXISTING);
+
+			return outputPath.toFile();
+		}
+	}
 
 }
