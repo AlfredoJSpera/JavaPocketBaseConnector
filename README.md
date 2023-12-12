@@ -28,9 +28,10 @@ After downloading both the jar and [pocketbase.exe](https://github.com/pocketbas
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 PBCollection collection = pb.readAllRecords("collection_name");
+List<PBRecord> recordList = collection.getItems();
 ```
 #### Query Parameters
-You can use the `PBQuery` class to sort, filter and expand the list parameters. 
+You can use the `PBQuery` class to sort, filter and expand the list records. 
 The query syntax is the same as the one used in the [PocketBase official API](https://pocketbase.io/docs/api-rules-and-filters/).
 
 Query parameters can be set in the constructor and can be `null` if not needed.
@@ -64,7 +65,8 @@ List<PBRecord> recordList = collection.getItems();
 
 ### View one
 **Fetch a single record.**
-The non-system-generated fields of the record can be accessed with the `getValues` method.
+
+The non-system generated fields of the record can be accessed with the `getValues` method.
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
@@ -76,9 +78,9 @@ Map<String, Object> values = record.getValues();
 ### Create
 **Create a new record.**
 
-To create a new record without files you can use the `createRecord` method.
+To create a new record you can use the `createRecord` method.
 
-You can put the value of the fields that you have created in the admin panel inside a `Map<String, Object>`.
+The value of the fields can be put inside a `Map<String, Object>`.
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
@@ -114,7 +116,9 @@ PBRecord record = pb.createRecordWithFiles("collection_name", values, files);
 ### Update
 **Update a single record.**
 
-You can modify the map.
+You can modify the map obtained from the record.
+
+_This must be changed._
 
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
@@ -129,9 +133,6 @@ values.put("content", "New Content");
 record = pb.updateRecord("posts", record);
 ```
 
-#### Delete a file
-To delete a file, use the `updateRecord` method and set the value of the field to `null`.
-
 ### Delete
 **Delete a single record.**
 ```java
@@ -140,8 +141,16 @@ PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 pb.deleteRecord("collection_name", "record_id");
 ```
 
+## Files
+### Upload a file
+*To change*
+Use the `createRecordWithFiles` to create a new record with the file or use the `updateRecord` method and put the file in the `files` map.
+
+### Delete a file
+To delete a file, use the `updateRecord` method and set the value of the file field to `null`.
+
 ### Download a file
-**Download a file from a record.**
+To download a file, use the `downloadFile` method.
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
@@ -150,9 +159,8 @@ String fileName = pb.readOneRecord("collection_name", "record_name").getValues()
 pb.downloadFile("collection_name", "record_name", fileName, "path/to/put/file.txt");
 ```
 
----
 ## Authentication
-You can authenticate as an admin or a regular user. In both cases, you'll get an object with all the data of the authenticated user.
+You can authenticate as an admin or a regular user. In both cases, you'll get an object with all the data of the authentication.
 
 The most important field is the `token` that you can use to authenticate yourself when using some methods.
 
@@ -172,7 +180,7 @@ UserData userData = pb.userAuthentication("users_collection_name", EMAIL, PASSWO
 String userToken = userData.getToken();
 ```
 
-### Use the token
+### Using the token
 Almost all the methods have an optional `token` parameter that you can use to authenticate yourself.
 This is necessary if the collection can be accessed only by certain users specified in the PocketBase admin console.
 
@@ -184,5 +192,6 @@ PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 AdminData adminData = pb.adminAuthentication(ADMIN_EMAIL, ADMIN_PASSWORD);
 String adminToken = adminData.getToken();
 
+// Example of a method that uses the token
 pb.deleteRecord("collection_name", "record_id", adminToken);
 ```
