@@ -3,17 +3,17 @@ package connector;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CollectionPage {
+public class PBCollection {
 	private String page;
 	private String perPage;
 	private String totalPages;
 	private String totalItems;
-	private List<Record> items = new ArrayList<>();
+	private List<PBRecord> items = new ArrayList<>();
 
-	public CollectionPage() {
+	public PBCollection() {
 	}
 
-	public CollectionPage(String page, String perPage, String totalPages, String totalItems) {
+	public PBCollection(String page, String perPage, String totalPages, String totalItems) {
 		this.page = page;
 		this.perPage = perPage;
 		this.totalPages = totalPages;
@@ -52,17 +52,17 @@ public class CollectionPage {
 		this.totalItems = totalItems;
 	}
 
-	public List<Record> getItems() {
+	public List<PBRecord> getItems() {
 		return items;
 	}
 
-	public void setItems(List<Record> items) {
+	public void setItems(List<PBRecord> items) {
 		this.items = items;
 	}
 
 	@Override
 	public String toString() {
-		return "CollectionPage{" +
+		return "PBCollection{" +
 				"page='" + page + '\'' +
 				", perPage='" + perPage + '\'' +
 				", totalPages='" + totalPages + '\'' +

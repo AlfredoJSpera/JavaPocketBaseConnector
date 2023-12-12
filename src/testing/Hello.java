@@ -1,12 +1,10 @@
 package testing;
 
 import connector.*;
-import connector.Record;
+import connector.PBRecord;
 
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 public class Hello {
@@ -19,20 +17,22 @@ public class Hello {
 	private static final String COLLECTION = "posts";
 	private static final String RECORD = "a08eq0qsow53pvw";
 
+	private static final String SAVE_PATH = "C:/Users/Alfredo/Desktop/test.png";
+
 	public static void main(String[] args) throws Exception {
 		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
 		String token = pb.adminAuthentication(ADMIN_EMAIL, ADMIN_PASS).getToken();
 
 
-		Record record = pb.readOneRecord(COLLECTION, RECORD, token);
+		PBRecord record = pb.readOneRecord(COLLECTION, RECORD, token);
 		Map<String, Object> values = record.getValues();
 		String imageName = (String) values.get("image");
 
 		System.out.println(values.get("title") + ", " + values.get("content") + ", " + values.get("views") + ", "
 				+ record.getCreated() + ", " + imageName);
 
-		File file = pb.downloadFile(COLLECTION, RECORD, imageName, "C:/Users/Alfredo/Desktop/test.png", token);
+		File file = pb.downloadFile(COLLECTION, RECORD, imageName, SAVE_PATH, token);
 		System.out.println("Downloaded file to: " + file.getAbsolutePath());
 		openFileInDefaultViewer(file);
 

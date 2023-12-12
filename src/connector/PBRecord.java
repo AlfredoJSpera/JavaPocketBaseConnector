@@ -3,7 +3,7 @@ package connector;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Record {
+public class PBRecord {
 	private String id;
 	private String collectionId;
 	private String collectionName;
@@ -11,19 +11,19 @@ public class Record {
 	private String updated;
 	private Map<String, Object> values = new HashMap<>();
 
-	public Record() {
+	public PBRecord() {
 	}
 
-	public Record(Map<String, Object> values) {
+	public PBRecord(Map<String, Object> values) {
 		this.values = values;
 	}
 
-	public Record(String id, Map<String, Object> values) {
+	public PBRecord(String id, Map<String, Object> values) {
 		this.id = id;
 		this.values = values;
 	}
 
-	public Record(String id, String collectionId, String collectionName, String created, String updated) {
+	public PBRecord(String id, String collectionId, String collectionName, String created, String updated) {
 		this.id = id;
 		this.collectionId = collectionId;
 		this.collectionName = collectionName;
@@ -81,7 +81,7 @@ public class Record {
 
 	@Override
 	public String toString() {
-		return "Record{" +
+		return "PBRecord{" +
 				"id='" + id + '\'' +
 				", collectionId='" + collectionId + '\'' +
 				", collectionName='" + collectionName + '\'' +

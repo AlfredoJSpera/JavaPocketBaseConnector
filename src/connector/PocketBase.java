@@ -6,8 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -17,7 +15,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -166,8 +163,8 @@ public class PocketBase {
 	 * @param object the JSON object
 	 * @return the record built
 	 */
-	private Record buildRecord(JsonObject object) {
-		Record record = new Record();
+	private PBRecord buildRecord(JsonObject object) {
+		PBRecord record = new PBRecord();
 
 		// Iterate through the JSON object and set the values of the record
 		object.entrySet().forEach(entry -> {
@@ -224,7 +221,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public Record createRecord(String collectionName, Map<String, Object> data, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, Map<String, Object> data, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -256,7 +253,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public Record createRecord(String collectionName, Record record, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, PBRecord record, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		return createRecord(collectionName, record.getValues(), authToken);
 	}
 
@@ -269,7 +266,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public Record createRecord(String collectionName, Map<String, Object> data) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, Map<String, Object> data) throws IOException, PocketBaseException, InterruptedException {
 		return createRecord(collectionName, data, null);
 	}
 
@@ -282,7 +279,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public Record createRecord(String collectionName, Record record) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, PBRecord record) throws IOException, PocketBaseException, InterruptedException {
 		return createRecord(collectionName, record.getValues(), null);
 	}
 
@@ -297,7 +294,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public CollectionPage readAllRecords(String collectionName, String authToken, PBQuery queryOptions) throws IOException, PocketBaseException, InterruptedException {
+	public PBCollection readAllRecords(String collectionName, String authToken, PBQuery queryOptions) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -324,7 +321,7 @@ public class PocketBase {
 
 		// Create the collection page
 		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
-		CollectionPage collectionPage = new CollectionPage(
+		PBCollection collectionPage = new PBCollection(
 				jsonObject.get("page").getAsString(),
 				jsonObject.get("perPage").getAsString(),
 				jsonObject.get("totalPages").getAsString(),
@@ -335,7 +332,7 @@ public class PocketBase {
 		JsonArray items = jsonObject.getAsJsonArray("items");
 		items.forEach(item -> {
 			JsonObject itemObject = item.getAsJsonObject();
-			Record record = buildRecord(itemObject);
+			PBRecord record = buildRecord(itemObject);
 			collectionPage.getItems().add(record);
 		});
 
@@ -351,7 +348,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public CollectionPage readAllRecords(String collectionName, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBCollection readAllRecords(String collectionName, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		return readAllRecords(collectionName, authToken, null);
 	}
 
@@ -364,7 +361,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public CollectionPage readAllRecords(String collectionName, PBQuery queryOptions) throws IOException, PocketBaseException, InterruptedException {
+	public PBCollection readAllRecords(String collectionName, PBQuery queryOptions) throws IOException, PocketBaseException, InterruptedException {
 		return readAllRecords(collectionName, null, queryOptions);
 	}
 
@@ -376,7 +373,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public CollectionPage readAllRecords(String collectionName) throws IOException, PocketBaseException, InterruptedException {
+	public PBCollection readAllRecords(String collectionName) throws IOException, PocketBaseException, InterruptedException {
 		return readAllRecords(collectionName, null, null);
 	}
 
@@ -390,7 +387,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public Record readOneRecord(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord readOneRecord(String collectionName, String recordId, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -419,7 +416,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public Record readOneRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord readOneRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
 		return readOneRecord(collectionName, recordId, null);
 	}
 
@@ -432,7 +429,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public Record updateRecord(String collectionName, Record updatedRecord, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord updateRecord(String collectionName, PBRecord updatedRecord, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + updatedRecord.getId();
 
@@ -460,7 +457,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public Record updateRecord(String collectionName, Record updatedRecord) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord updateRecord(String collectionName, PBRecord updatedRecord) throws IOException, PocketBaseException, InterruptedException {
 		return updateRecord(collectionName, updatedRecord, null);
 	}
 
@@ -599,6 +596,17 @@ public class PocketBase {
 
 	// ==================== FILE HANDLING ====================
 
+	/**
+	 * Downloads a file from a record inside a protected collection with an authorization token.
+	 * @param collectionName the collection name
+	 * @param recordId the id of the record
+	 * @param fileName the name of the file
+	 * @param savePath the path where to save the file
+	 * @param authToken the authorization token
+	 * @return the downloaded file
+	 * @throws IOException the database is unreachable
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 */
 	public File downloadFile(String collectionName, String recordId, String fileName, String savePath, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		String url = address + "/api/files/" + collectionName + "/" + recordId + "/" + fileName;
 
@@ -613,18 +621,28 @@ public class PocketBase {
 					.header("Authorization", authToken);
 		}
 
-		HttpRequest request = requestBuilder.build();
-
-		HttpResponse<InputStream> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofInputStream());
+		HttpResponse<InputStream> response = HttpClient.newHttpClient().send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream());
 
 		try (InputStream in = response.body()) {
-			System.out.println("Downloading from " + url);
-
 			Path outputPath = Path.of(savePath);
 			Files.copy(in, outputPath, StandardCopyOption.REPLACE_EXISTING);
 
 			return outputPath.toFile();
 		}
+	}
+
+	/**
+	 * Downloads a file from a record inside a collection with an authorization token.
+	 * @param collectionName the collection name
+	 * @param recordId the id of the record
+	 * @param fileName the name of the file
+	 * @param savePath the path where to save the file
+	 * @return the downloaded file
+	 * @throws IOException the database is unreachable
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 */
+	public File downloadFile(String collectionName, String recordId, String fileName, String savePath) throws IOException, PocketBaseException, InterruptedException {
+		return downloadFile(collectionName, recordId, fileName, savePath, null);
 	}
 
 }
