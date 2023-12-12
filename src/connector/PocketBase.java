@@ -19,7 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * An abstraction of <a href="https://pocketbase.io/">PocketBase</a>, with all the methods to operate on its records.
+ * A class with all the methods to operate on <a href="https://pocketbase.io/">PocketBase</a> collections and records.
  */
 public class PocketBase {
 	private final String address;
@@ -35,6 +35,12 @@ public class PocketBase {
 	 */
 	public PocketBase(String address) {
 		this.address = address;
+	}
+
+	// ==================== COMMON METHODS ====================
+
+	public String getAddress() {
+		return address;
 	}
 
 	/**
@@ -62,17 +68,11 @@ public class PocketBase {
 		return resultList;
 	}
 
-	// ==================== COMMON METHODS ====================
-
-	public String getAddress() {
-		return address;
-	}
-
 	/**
-	 * Common method that handles and returns the response of the HTTP request.
+	 * Handles and returns the response of the HTTP request.
 	 *
 	 * @param requestBuilder the request builder
-	 * @return the json response of the HTTP request
+	 * @return the json string response of the HTTP request
 	 */
 	private String handleResponse(HttpRequest.Builder requestBuilder) throws IOException, InterruptedException, PocketBaseException {
 		// Build the request
@@ -97,9 +97,9 @@ public class PocketBase {
 	}
 
 	/**
-	 * Method that handles the errors of the HTTP request.
+	 * Handles the errors that happened inside the HTTP request.
 	 *
-	 * @param body the json body of the response
+	 * @param body the json string of the response
 	 */
 	private void handleResponseError(String body) throws PocketBaseException {
 		JsonObject errorJson = gson.fromJson(body, JsonObject.class);
@@ -118,6 +118,7 @@ public class PocketBase {
 			List<String> errorPoints = extractWords(entrySetStr, "\\b\\w+\\s*=\\{");
 			List<ErrorInformationWrapper> infos = new ArrayList<>();
 
+			// Find the error causes and put them in a list
 			for (String errorPoint : errorPoints) {
 				JsonObject errorPointJson = null;
 				try {
@@ -130,7 +131,7 @@ public class PocketBase {
 				}
 			}
 
-			// Exception with specific errors
+			// Exception with specific error causes
 			throw new PocketBaseException(errorCode, errorMessage, infos);
 		} else {
 			// For general errors
@@ -139,7 +140,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Common method that tries to authenticate a user or admin
+	 * Authenticates a user or admin.
 	 *
 	 * @param identity       the identity (email)
 	 * @param password       the password
@@ -161,7 +162,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Common method that builds a record from a JSON object.
+	 * Builds a record from a JSON object.
 	 *
 	 * @param object the JSON object
 	 * @return the record built
@@ -172,6 +173,7 @@ public class PocketBase {
 		// Iterate through the JSON object and set the values of the record
 		object.entrySet().forEach(entry -> {
 			switch (entry.getKey()) {
+				// Fixed fields created by the PocketBase system
 				case "id":
 					record.setId(entry.getValue().getAsString());
 					break;
@@ -187,6 +189,7 @@ public class PocketBase {
 				case "updated":
 					record.setUpdated(entry.getValue().getAsString());
 					break;
+				// Record fields
 				default:
 					// If the value is null, set it to null, otherwise set it to the string value
 					if (entry.getValue().toString().equals("[]") || entry.getValue().toString().equals("{}") || entry.getValue() instanceof JsonNull)
@@ -233,11 +236,13 @@ public class PocketBase {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
+		String inputJson = gson.toJson(recordValues);
+
 		// Open HTTP connection
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
 				.uri(URI.create(url))
 				.header("Content-Type", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(gson.toJson(recordValues))); // Write the JSON inside the request body
+				.POST(HttpRequest.BodyPublishers.ofString(inputJson));
 
 		// Add the authorization token if present
 		if (authToken != null) {
@@ -252,7 +257,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Creates a new record inside an unprotected collection.
+	 * Creates a new record inside a collection.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordValues   the map containing the values to insert
@@ -265,12 +270,12 @@ public class PocketBase {
 	}
 
 	/**
-	 * Creates a new record inside a protected collection with an authorization token and files.
+	 * Creates a new record inside a protected collection with an authorization token and files.<br>
 	 * <b>This method uses the multipart/form-data content type.</b>
 	 *
 	 * @param collectionName the collection name
 	 * @param recordValues   the map containing the values to insert
-	 * @param files          the map containing the files to insert, where the String is the name of the column in the db
+	 * @param files          the map containing the files to insert, where the String is the name of the field in the db
 	 * @param authToken      the authorization token
 	 * @return the record created
 	 * @throws IOException         the database is unreachable
@@ -304,6 +309,7 @@ public class PocketBase {
 			requestBuilder = requestBuilder.header("Authorization", authToken);
 		}
 
+		// Send the request and get the response json
 		String response = handleResponse(requestBuilder);
 
 		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
@@ -311,7 +317,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Creates a new record inside a collection with files.
+	 * Creates a new record inside a collection with files.<br>
 	 * <b>This method uses the multipart/form-data content type.</b>
 	 *
 	 * @param collectionName the collection name
@@ -329,8 +335,8 @@ public class PocketBase {
 	 * Gets all the records from a protected collection with the authorization token and query options.
 	 *
 	 * @param collectionName the collection name
-	 * @param queryOptions   the options for the query of the records
 	 * @param authToken      the authorization token
+	 * @param queryOptions   the options for the query of the records
 	 * @return a page with the records and info about the page
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
@@ -367,7 +373,7 @@ public class PocketBase {
 				jsonObject.get("totalItems").getAsString()
 		);
 
-		// Items in the collection page
+		// Put items in the collection page
 		JsonArray items = jsonObject.getAsJsonArray("items");
 		items.forEach(item -> {
 			JsonObject itemObject = item.getAsJsonObject();
@@ -392,7 +398,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Gets all the records from an unprotected collection with query options.
+	 * Gets all the records from a collection with query options.
 	 *
 	 * @param collectionName the collection name
 	 * @param queryOptions   the options for the query of the records
@@ -405,7 +411,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Gets all the records from an unprotected collection.
+	 * Gets all the records from a collection.
 	 *
 	 * @param collectionName the collection name
 	 * @return a page with the records and info about the page
@@ -422,7 +428,7 @@ public class PocketBase {
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record
 	 * @param authToken      the authorization token
-	 * @return a page with the records and info about the page
+	 * @return the record found
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
@@ -442,12 +448,13 @@ public class PocketBase {
 					.header("Authorization", authToken);
 		}
 
+		// Send the request and get the response json
 		String response = handleResponse(requestBuilder);
 		return buildRecord(gson.fromJson(response, JsonObject.class));
 	}
 
 	/**
-	 * Gets one record from an unprotected collection.
+	 * Gets one record from a collection.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record
@@ -460,10 +467,11 @@ public class PocketBase {
 	}
 
 	/**
-	 * Modifies an existing record given its recordId inside a protected collection with an authorization token.
+	 * Updates an existing record inside a protected collection with an authorization token.
 	 *
 	 * @param collectionName the collection name
 	 * @param updatedRecord  the updated updatedRecord
+	 * @param authToken      the authorization token
 	 * @return the updated record
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
@@ -472,11 +480,13 @@ public class PocketBase {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + updatedRecord.getId();
 
+		String inputJson = gson.toJson(updatedRecord.getValues());
+
 		// Open HTTP connection
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
 				.uri(URI.create(url))
 				.header("Content-Type", "application/json")
-				.method("PATCH", HttpRequest.BodyPublishers.ofString(gson.toJson(updatedRecord.getValues()))); // Write the JSON inside the request body
+				.method("PATCH", HttpRequest.BodyPublishers.ofString(inputJson));
 
 		// Add the authorization token if present
 		if (authToken != null) {
@@ -488,7 +498,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Modifies an existing record inside an unprotected collection.
+	 * Updates an existing record inside a collection.
 	 *
 	 * @param collectionName the collection name
 	 * @param updatedRecord  the updated updatedRecord
@@ -505,6 +515,7 @@ public class PocketBase {
 	 *
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record to delete
+	 * @param authToken      the authorization token
 	 * @return true if the record has been deleted, otherwise an exception is thrown
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
@@ -516,7 +527,7 @@ public class PocketBase {
 		// Open HTTP connection
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
 				.uri(URI.create(url))
-				.DELETE(); // Write the JSON inside the request body
+				.DELETE();
 
 		// Add the authorization token if present
 		if (authToken != null) {
@@ -525,12 +536,11 @@ public class PocketBase {
 					.header("Authorization", authToken);
 		}
 
-
 		return handleResponse(requestBuilder).equals("204");
 	}
 
 	/**
-	 * Deletes an existing record inside an unprotected collection.
+	 * Deletes an existing record inside a collection.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record to delete
@@ -544,18 +554,16 @@ public class PocketBase {
 
 	// ==================== AUTHENTICATION METHODS ====================
 
-
 	/**
-	 * Authenticate a regular user.
+	 * Authenticates a regular user.
 	 *
 	 * @param usersCollectionName the collection name
 	 * @param identity            the identity (email)
 	 * @param password            the password
-	 * @return the json of the response
+	 * @return the user data
 	 * @throws IOException the database is unreachable
 	 */
 	public UserData userAuthentication(String usersCollectionName, String identity, String password) throws IOException, PocketBaseException, InterruptedException {
-		// Create the URL
 		String usersUrl = address + "/api/collections/" + usersCollectionName + "/auth-with-password";
 
 		String response = authorize(identity, password, usersUrl);
@@ -569,6 +577,7 @@ public class PocketBase {
 		// Iterate through the JSON object and set the values of the record
 		record.entrySet().forEach(entry -> {
 			switch (entry.getKey()) {
+				// Fixed fields created by the PocketBase system
 				case "id":
 					userData.setId(entry.getValue().getAsString());
 					break;
@@ -606,7 +615,7 @@ public class PocketBase {
 	}
 
 	/**
-	 * Authenticate an admin.
+	 * Authenticates an admin.
 	 *
 	 * @param identity the identity (email)
 	 * @param password the password
@@ -614,7 +623,6 @@ public class PocketBase {
 	 * @throws IOException the database is unreachable
 	 */
 	public AdminData adminAuthentication(String identity, String password) throws IOException, PocketBaseException, InterruptedException {
-		// Create the URL
 		String adminsUrl = address + "/api/admins/auth-with-password";
 
 		String response = authorize(identity, password, adminsUrl);
@@ -642,7 +650,7 @@ public class PocketBase {
 	 * @param recordId       the id of the record
 	 * @param fileName       the name of the file
 	 * @param savePath       the path where to save the file
-	 * @param thumb          receive the optional thumbnail of the file given the size, leave null if not needed
+	 * @param thumb          optional thumbnail parameter of the file given the size, leave null if not needed
 	 * @param authToken      the authorization token
 	 * @return the downloaded file
 	 * @throws IOException         the database is unreachable
@@ -682,7 +690,7 @@ public class PocketBase {
 	 * @param recordId       the id of the record
 	 * @param fileName       the name of the file
 	 * @param savePath       the path where to save the file
-	 * @param thumb          receive the optional thumbnail of the file given the size, leave null if not needed
+	 * @param thumb          optional thumbnail parameter of the file given the size, leave null if not needed
 	 * @return the downloaded file
 	 * @throws IOException         the database is unreachable
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
@@ -690,10 +698,6 @@ public class PocketBase {
 	public File downloadFile(String collectionName, String recordId, String fileName, String savePath, String thumb) throws IOException, PocketBaseException, InterruptedException {
 		return downloadFile(collectionName, recordId, fileName, savePath, thumb, null);
 	}
-
-	// (POST)   add file:    /api/collections/COLLECTION_NAME/records
-	// (PATCH)  modify file: /api/collections/COLLECTION_NAME/records/RECORD_ID
-	// (DELETE) delete file: /api/collections/COLLECTION_NAME/records/RECORD_ID
 
 
 }
