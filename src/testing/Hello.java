@@ -5,6 +5,7 @@ import connector.PBRecord;
 
 import java.awt.*;
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 public class Hello {
@@ -24,26 +25,13 @@ public class Hello {
 
 		String token = pb.adminAuthentication(ADMIN_EMAIL, ADMIN_PASS).getToken();
 
+		Map<String, Object> values = new HashMap<>();
+		values.put("title", "Aurora");
+		values.put("content", "Aurora is a natural light display in the Earth's sky, predominantly seen in the high-latitude regions (around the Arctic and Antarctic).");
+		values.put("views", 211);
+		Map<String, File> files = Map.of("image", new File("C:/Users/Alfredo/Desktop/aurora.png"));
 
-		PBRecord record = pb.readOneRecord(COLLECTION, RECORD, token);
-		Map<String, Object> values = record.getValues();
-		String imageName = (String) values.get("image");
-
-		System.out.println(values.get("title") + ", " + values.get("content") + ", " + values.get("views") + ", "
-				+ record.getCreated() + ", " + imageName);
-
-		File file = pb.downloadFile(COLLECTION, RECORD, imageName, SAVE_PATH, token);
-		System.out.println("Downloaded file to: " + file.getAbsolutePath());
-		openFileInDefaultViewer(file);
-
-	}
-
-	public static void openFileInDefaultViewer(File file) throws Exception {
-		if (Desktop.isDesktopSupported()) {
-			Desktop desktop = Desktop.getDesktop();
-			desktop.open(file);
-		} else {
-			System.out.println("Opening files is not supported on this platform.");
-		}
+		PBRecord r = pb.createRecordWithFiles(COLLECTION, values, files, token);
+		System.out.println("r = " + r);
 	}
 }

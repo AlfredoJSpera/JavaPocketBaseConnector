@@ -34,11 +34,36 @@ public class PocketBase {
 		this.address = address;
 	}
 
-	public String getAddress() {
-		return address;
+	/**
+	 * Extracts all the words from a string that match a regex.
+	 *
+	 * @param input the input string
+	 * @return the list of words
+	 */
+	private static List<String> extractWords(String input, String regex) {
+		List<String> resultList = new ArrayList<>();
+
+		// Define the regex pattern
+		Pattern pattern = Pattern.compile(regex);
+
+		// Create a matcher object
+		Matcher matcher = pattern.matcher(input);
+
+		// Find all matches
+		while (matcher.find()) {
+			// Get the matched word and add it to the list
+			String matchedWord = matcher.group().trim();
+			resultList.add(matchedWord.substring(0, matchedWord.length() - 2));
+		}
+
+		return resultList;
 	}
 
 	// ==================== COMMON METHODS ====================
+
+	public String getAddress() {
+		return address;
+	}
 
 	/**
 	 * Common method that handles and returns the response of the HTTP request.
@@ -111,31 +136,6 @@ public class PocketBase {
 	}
 
 	/**
-	 * Extracts all the words from a string that match a regex.
-	 *
-	 * @param input the input string
-	 * @return the list of words
-	 */
-	private static List<String> extractWords(String input, String regex) {
-		List<String> resultList = new ArrayList<>();
-
-		// Define the regex pattern
-		Pattern pattern = Pattern.compile(regex);
-
-		// Create a matcher object
-		Matcher matcher = pattern.matcher(input);
-
-		// Find all matches
-		while (matcher.find()) {
-			// Get the matched word and add it to the list
-			String matchedWord = matcher.group().trim();
-			resultList.add(matchedWord.substring(0, matchedWord.length() - 2));
-		}
-
-		return resultList;
-	}
-
-	/**
 	 * Common method that tries to authenticate a user or admin
 	 *
 	 * @param identity       the identity (email)
@@ -195,6 +195,7 @@ public class PocketBase {
 
 	/**
 	 * Encodes a string to be used in a URL.
+	 *
 	 * @param s the string to encode
 	 * @return the encoded string
 	 */
@@ -215,13 +216,13 @@ public class PocketBase {
 	 * Creates a new record inside a protected collection with an authorization token.
 	 *
 	 * @param collectionName the collection name
-	 * @param data           the map containing the data to insert
+	 * @param recordValues   the map containing the values to insert
 	 * @param authToken      the authorization token
 	 * @return the record created
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord createRecord(String collectionName, Map<String, Object> data, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, Map<String, Object> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -229,7 +230,7 @@ public class PocketBase {
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
 				.uri(URI.create(url))
 				.header("Content-Type", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(gson.toJson(data))); // Write the JSON inside the request body
+				.POST(HttpRequest.BodyPublishers.ofString(gson.toJson(recordValues))); // Write the JSON inside the request body
 
 		// Add the authorization token if present
 		if (authToken != null) {
@@ -244,43 +245,62 @@ public class PocketBase {
 	}
 
 	/**
-	 * Creates a new record inside a protected collection with an authorization token.
+	 * Creates a new record inside an unprotected collection.
 	 *
 	 * @param collectionName the collection name
-	 * @param record         the record containing to insert
+	 * @param recordValues   the map containing the values to insert
+	 * @return the record created
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public PBRecord createRecord(String collectionName, Map<String, Object> recordValues) throws IOException, PocketBaseException, InterruptedException {
+		return createRecord(collectionName, recordValues, null);
+	}
+
+	/**
+	 * Creates a new record inside a protected collection with an authorization token and files.
+	 * This method uses the <code>multipart/form-data</code> content type.
+	 *
+	 * @param collectionName the collection name
+	 * @param recordValues   the map containing the values to insert
+	 * @param files          the map containing the files to insert, where the String is the name of the column in the db
 	 * @param authToken      the authorization token
 	 * @return the record created
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 */
-	public PBRecord createRecord(String collectionName, PBRecord record, String authToken) throws IOException, PocketBaseException, InterruptedException {
-		return createRecord(collectionName, record.getValues(), authToken);
-	}
+	public PBRecord createRecordWithFiles(String collectionName, Map<String, Object> recordValues, Map<String, File> files, String authToken) throws IOException, PocketBaseException, InterruptedException {
+		// Create the URL
+		String url = address + "/api/collections/" + collectionName + "/records";
 
-	/**
-	 * Creates a new record inside an unprotected collection.
-	 *
-	 * @param collectionName the collection name
-	 * @param data           the map containing the data to insert
-	 * @return the record created
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 * @throws IOException         the database is unreachable
-	 */
-	public PBRecord createRecord(String collectionName, Map<String, Object> data) throws IOException, PocketBaseException, InterruptedException {
-		return createRecord(collectionName, data, null);
-	}
+		// Insert everything in the multipart body
+		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
 
-	/**
-	 * Creates a new record inside an unprotected collection.
-	 *
-	 * @param collectionName the collection name
-	 * @param record         the record containing the data to insert
-	 * @return the record created
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 * @throws IOException         the database is unreachable
-	 */
-	public PBRecord createRecord(String collectionName, PBRecord record) throws IOException, PocketBaseException, InterruptedException {
-		return createRecord(collectionName, record.getValues(), null);
+		// Values
+		for (Map.Entry<String, Object> entry : recordValues.entrySet()) {
+			publisher.addPart(entry.getKey(), entry.getValue().toString());
+		}
+
+		// Files
+		for (Map.Entry<String, File> entry : files.entrySet()) {
+			publisher.addPart(entry.getKey(), entry.getValue().toPath());
+		}
+
+		// Open HTTP connection
+		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
+				.POST(publisher.build());
+
+		// Add the authorization token if present
+		if (authToken != null) {
+			requestBuilder = requestBuilder.header("Authorization", authToken);
+		}
+
+		String response = handleResponse(requestBuilder);
+
+		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
+		return buildRecord(jsonObject);
 	}
 
 
@@ -597,18 +617,23 @@ public class PocketBase {
 	// ==================== FILE HANDLING ====================
 
 	/**
-	 * Downloads a file from a record inside a protected collection with an authorization token.
+	 * Downloads a file to the local machine from a record inside a protected collection with an authorization token.
+	 *
 	 * @param collectionName the collection name
-	 * @param recordId the id of the record
-	 * @param fileName the name of the file
-	 * @param savePath the path where to save the file
-	 * @param authToken the authorization token
+	 * @param recordId       the id of the record
+	 * @param fileName       the name of the file
+	 * @param savePath       the path where to save the file
+	 * @param thumb          receive the optional thumbnail of the file given the size, leave null if not needed
+	 * @param authToken      the authorization token
 	 * @return the downloaded file
-	 * @throws IOException the database is unreachable
+	 * @throws IOException         the database is unreachable
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 */
-	public File downloadFile(String collectionName, String recordId, String fileName, String savePath, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public File downloadFile(String collectionName, String recordId, String fileName, String savePath, String thumb, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		String url = address + "/api/files/" + collectionName + "/" + recordId + "/" + fileName;
+
+		if (thumb != null)
+			url += "?thumb=" + thumb;
 
 		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
 				.uri(URI.create(url))
@@ -632,19 +657,24 @@ public class PocketBase {
 	}
 
 	/**
-	 * Downloads a file from a record inside a collection with an authorization token.
+	 * Downloads a file to the local machine from a record inside a collection.
+	 *
 	 * @param collectionName the collection name
-	 * @param recordId the id of the record
-	 * @param fileName the name of the file
-	 * @param savePath the path where to save the file
+	 * @param recordId       the id of the record
+	 * @param fileName       the name of the file
+	 * @param savePath       the path where to save the file
+	 * @param thumb          receive the optional thumbnail of the file given the size, leave null if not needed
 	 * @return the downloaded file
-	 * @throws IOException the database is unreachable
+	 * @throws IOException         the database is unreachable
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 */
-	public File downloadFile(String collectionName, String recordId, String fileName, String savePath) throws IOException, PocketBaseException, InterruptedException {
-		return downloadFile(collectionName, recordId, fileName, savePath, null);
+	public File downloadFile(String collectionName, String recordId, String fileName, String savePath, String thumb) throws IOException, PocketBaseException, InterruptedException {
+		return downloadFile(collectionName, recordId, fileName, savePath, thumb, null);
 	}
 
+	// (POST)   add file:    /api/collections/COLLECTION_NAME/records
+	// (PATCH)  modify file: /api/collections/COLLECTION_NAME/records/RECORD_ID
+	// (DELETE) delete file: /api/collections/COLLECTION_NAME/records/RECORD_ID
 
 
 }
