@@ -149,6 +149,17 @@ Use the `createRecordWithFiles` to create a new record with the file or use the 
 ### Delete a file
 To delete a file, use the `updateRecord` method and set the value of the file field to `null`.
 
+```java
+PocketBase pb = new PocketBase("http://127.0.0.1:8090");
+
+PBRecord record = pb.readOneRecord("collection_name", "record_name");
+
+Map<String, Object> values = record.getValues();
+values.put("file_field", null);
+
+pb.updateRecord("collection_name", "record_name", values);
+```
+
 ### Download a file
 To download a file, use the `downloadFile` method.
 ```java
