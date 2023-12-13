@@ -616,6 +616,12 @@ public class PocketBase {
 
 
 	// ==================== FILE HANDLING ====================
+
+	// ADD A NEW FILE: filesStringList.add(path);
+	// REMOVE A FILE: filesStringList.set(index, "");
+	// REMOVE ALL FILES: filesStringList.clear(); filesStringList.add("");
+	// UPDATE A FILE: filesStringList.set(index, ""); filesStringList.set(index, path);
+
 	/**
 	 * Downloads a file to the local machine from a record inside a protected collection using an authorization token.
 	 *

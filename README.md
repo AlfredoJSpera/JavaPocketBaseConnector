@@ -28,7 +28,7 @@ Fetch a paginated records list.
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 PBCollection collection = pb.readAllRecords("COLLECTION_NAME");
-List<PBRecord> recordList = collection.getItems();
+List<PBRecord> records = collection.getItems();
 ```
 #### Query Parameters
 You can use the `PBQuery` class to sort, filter and expand the list records. 
@@ -46,7 +46,7 @@ PBCollection collection = pb.readAllRecords("COLLECTION_NAME",
 		)
 );
 
-List<PBRecord> recordList = collection.getItems();
+List<PBRecord> records = collection.getItems();
 ```
 
 `PBQuery` can also be used to set the current page and the page size for pagination.
@@ -60,7 +60,7 @@ PBCollection collection = pb.readAllRecords("COLLECTION_NAME",
 		)
 );
 
-List<PBRecord> recordList = collection.getItems();
+List<PBRecord> records = collection.getItems();
 ```
 
 ### View one
@@ -88,8 +88,8 @@ The value of the fields can be put inside a `Map<String, PBValue>`.
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 		
 Map<String, PBValue> values = new HashMap<>();
-values.put("field1", new PBValue().set("Value1"));
-values.put("field2", new PBValue().set("Value2"));
+values.put("field1", new PBValue().setString("Value1"));
+values.put("field2", new PBValue().setString("Value2"));
 
 PBRecord record = pb.createRecord("COLLECTION_NAME", values);
 ```
@@ -107,9 +107,9 @@ PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
 
 // Update the record
 Map<String, PBValue> values = record.getValues();
-values.put("field1", "New Value");
+values.put("field1", new PBValue().setString("New Value"));
 
-pb.updateRecord("posts", "RECORD_ID", values);
+pb.updateRecord("COLLECTION_NAME", "RECORD_ID", values);
 ```
 
 ### Delete
@@ -158,9 +158,9 @@ pb.deleteRecord("COLLECTION_NAME", "RECORD_ID", adminToken);
 ```
 
 ## Files
-To handle files you must use the methods that use the `multipart/form-data` content type instead of `application/json`.
+To handle files you must use the methods that have the `multipart/form-data` content type instead of `application/json`.
 
-#### Create a record with files
+### Create a record with files
 To create a record with files you can use the `createRecordWithFiles` method.
 
 You can put the value of the fields and the files in the same map.
@@ -170,35 +170,83 @@ You can put the value of the fields and the files in the same map.
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
-List<String> filesList = new ArrayList<>();
-filesList.add("path/to/file.txt");
+List<String> files = new ArrayList<>();
+files.add("path/to/file.txt");
 
 Map<String, PBValue> values = new HashMap<>();
-values.put("field1", new PBValue().set("Value1"));
-values.put("field2", new PBValue().set("Value2"));
-values.put("file_field", new PBValue().setList(filesList));
+values.put("field1", new PBValue().setString("Value1"));
+values.put("field2", new PBValue().setString("Value2"));
+values.put("file_field", new PBValue().setStringList(files));
 
 PBRecord record = pb.createRecordWithFiles("COLLECTION_NAME", values);
 ```
 
-### Delete a file
-To delete a file, use the `updateRecord` method and set to an empty string `""` the file in the string list.
+### Add a file
+To add a new file, use the `add(path)` method of `List` and use the `updateRecord` method.
+
+You can also modify the other fields of the record.
 
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
+// Get the record
 PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
 
 Map<String, PBValue> values = record.getValues();
+// Regular fields
+values.put("title", new PBValue().setString("New Value"));
+
+List<String> files = values.get("file_field").getList();
+files.add("path/to/file.txt");
+
+pb.updateRecordWithFiles(COLLECTION, "RECORD_ID", values);
+```
+
+### Delete a file
+To delete a file, set to an empty string `""` the file in the string list and use the `updateRecord` method.
+
+You can also modify the other fields of the record.
+
+```java
+PocketBase pb = new PocketBase("http://127.0.0.1:8090");
+
+// Get the record
+PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
+
+Map<String, PBValue> values = record.getValues();
+// Regular fields
+values.put("title", new PBValue().setString("New Value"));
 
 List<String> files = values.get("file_field").getList();
 files.set(INDEX, ""); // Remove the file
 
-pb.updateRecordWithFiles(COLLECTION, record.getId(), values);
+pb.updateRecordWithFiles(COLLECTION, "RECORD_ID", values);
+```
+
+### Delete all files
+To delete all files, clear the list, add an empty string `""` and use the `updateRecord` method.
+
+You can also modify the other fields of the record.
+
+```java
+PocketBase pb = new PocketBase("http://127.0.0.1:8090");
+
+// Get the record
+PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
+
+Map<String, PBValue> values = record.getValues();
+// Regular fields
+values.put("title", new PBValue().setString("New Value"));
+
+List<String> files = values.get("file_field").getList();
+files.clear();
+files.add("");
+
+pb.updateRecordWithFiles("COLLECTION_NAME", "RECORD_ID", values);
 ```
 
 ### Replace a file
-To replace a file, you can modify the record map and use the `set(index,path)` method of `List` to replace the file.
+To replace a file, you can modify the record map by using the `set(index,path)` method of `List`.
 
 Remember to delete the old file before adding the new one.
 
@@ -208,13 +256,13 @@ You can also modify the other fields of the record.
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
 // Get the record
-PBRecord record = pb.readOneRecord("COLLECTION_NAME", "hcbw4r907zjrup8");
+PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
 
 Map<String, PBValue> values = record.getValues();
 // Regular fields
-values.put("title", new PBValue().set("New Value"));
+values.put("title", new PBValue().setString("New Value"));
 
-List<String> files = values.get("image").getList();
+List<String> files = values.get("file_field").getList();
 files.set(INDEX, ""); // Remove the old file
 files.add(INDEX, "path/to/file.txt"); // Add the new file
 
@@ -222,16 +270,23 @@ pb.updateRecordWithFiles("COLLECTION_NAME", record.getId(), values);
 ```
 
 ### Download a file
-To download a file, use the `downloadFile` method.
+To download a file on your machine, use the `downloadFile` method.
 ```java
 PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
 // Get the record
-PBRecord record = pb.readOneRecord(COLLECTION, "a08eq0qsow53pvw");
-List<String> files = record.getValues().get("image").getList();
+PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
+
+Map<String, PBValue> values = record.getValues();
+
+List<String> files = values.get("file_field").getList();
 String fileName = files.get(0);
 
 pb.downloadFile("COLLECTION_NAME", "RECORD_ID", fileName, "path/to/put/file.txt");
 ```
+
+## Multi-value fields
+Files, Selects and Relations can be multi-value fields.
+Files are always inside a list, while Selects (and Relations *to see*) can be inside a list or a single value.
 
 
