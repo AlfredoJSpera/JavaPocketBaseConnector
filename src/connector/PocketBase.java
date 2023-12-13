@@ -312,12 +312,13 @@ public class PocketBase {
 				for (String string : entry.getValue().getStringList()) {
 					publisher.addPart(entry.getKey(), string);
 				}
-			} else if (entry.getValue().getFileList() != null) {
+			} else if (PBValues.isFileList(entry.getValue())) {
 				// FILE LIST
 				for (File file : entry.getValue().getFileList()) {
 					publisher.addPart(entry.getKey(), file.toPath());
 				}
-			} else {
+			// TODO: add support for relations
+			} else if (PBValues.isString(entry.getValue())){
 				// STRING
 				publisher.addPart(entry.getKey(), entry.getValue().getString());
 			}
@@ -347,7 +348,6 @@ public class PocketBase {
 	 *
 	 * @param collectionName the collection name
 	 * @param recordValues   the map containing the values to insert
-	 * @param files          the map containing the files to insert, where the String is the name of the column in the db
 	 * @return the record created
 	 * @throws IOException         the database is unreachable
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
@@ -533,6 +533,14 @@ public class PocketBase {
 	 */
 	public PBRecord updateRecord(String collectionName, String recordId, Map<String, PBValues> updatedValues) throws IOException, PocketBaseException, InterruptedException {
 		return updateRecord(collectionName, recordId, updatedValues, null);
+	}
+
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues , String authToken) {
+
+	}
+
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues) {
+		return updateRecordWithFiles(collectionName, recordId, updatedValues, null);
 	}
 
 	/**

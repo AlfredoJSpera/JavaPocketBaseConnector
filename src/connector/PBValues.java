@@ -18,6 +18,8 @@ public class PBValues {
 	private List<String> stringList;
 	private List<File> fileList;
 
+	// TODO: Add support for relations
+
 	public PBValues() {
 		string = null;
 		stringList = null;

@@ -36,6 +36,7 @@ public class Hello {
 		List<File> images = new ArrayList<>();
 		images.add(new File(GIANTS));
 		images.add(new File(WAVES));
+
 		List<String> types = new ArrayList<>();
 		types.add("other");
 		types.add("panorama");
