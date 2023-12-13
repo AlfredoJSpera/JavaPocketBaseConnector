@@ -1,4 +1,4 @@
-# JavaPocketBaseConnector
+# JavaPocketBase Connector
 This is a Java connector for [PocketBase](https://pocketbase.io) that lets you use your database in Java.
 
 This is still a work in progress.
