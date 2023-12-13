@@ -15,7 +15,7 @@ public class Hello {
 	private static final String USER_PASS = "Password";
 
 	private static final String COLLECTION = "posts";
-	private static final String RECORD = "qinj2zcqic8z48c";
+	private static final String RECORD = "95jh01oozx0qwg8";
 
 	private static final String GIANTS = "C:/Users/Alfredo/Desktop/the-giants-causeway.png";
 	private static final String WAVES = "C:/Users/Alfredo/Desktop/wave.png";
@@ -26,12 +26,14 @@ public class Hello {
 
 		PBRecord record = pb.readOneRecord(COLLECTION, RECORD);
 		Map<String, PBValue> values = record.getValues();
-		List<String> images = values.get("image").getList();
+		List<String> types = values.get("type").getList();
+		types.remove(1);
+		types.add("panorama");
 
-		images.set(2, "");
-		images.set(1, "");
+		pb.updateRecord(COLLECTION, RECORD, values);
 
-		pb.updateRecordWithFiles(COLLECTION, RECORD, values);
+		System.out.println("types = " + types);
+
 
 
 

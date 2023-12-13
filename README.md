@@ -289,4 +289,9 @@ pb.downloadFile("COLLECTION_NAME", "RECORD_ID", fileName, "path/to/put/file.txt"
 Files, Selects and Relations can be multi-value fields.
 Files are always inside a list, while Selects (and Relations *to see*) can be inside a list or a single value.
 
+### Files
+For files, you must use the `set(index,path)` to replace a file, the `add(path)` to add a new file and the `set(index,"")` to delete a file.
+
+### Selects
+For selects you can use the list's methods normally, like the `remove(index)` to remove a value and the `add(value)` to add a new one.
 
