@@ -19,9 +19,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A class with all the methods to operate on <a href="https://pocketbase.io/">PocketBase</a> collections and records.
+ * A class with all the methods to operate on <a href="https://pocketbase.io/">PBOperations</a> collections and records.
  */
-public class PocketBase {
+public class PBOperations {
 	private final String address;
 	private final Gson gson = new GsonBuilder()
 			.setPrettyPrinting()
@@ -30,11 +30,11 @@ public class PocketBase {
 			.create();
 
 	/**
-	 * Instantiates a new PocketBase connection.
+	 * Instantiates a new PBOperations connection.
 	 *
 	 * @param address the string address of the database
 	 */
-	public PocketBase(String address) {
+	public PBOperations(String address) {
 		this.address = address;
 	}
 
@@ -171,11 +171,11 @@ public class PocketBase {
 	private PBRecord buildRecord(JsonObject object) {
 		PBRecord record = new PBRecord();
 
-		System.out.println("object = " + object);
+		//System.out.println("object = " + object);
 		// Iterate through the JSON object and set the values of the record
 		object.entrySet().forEach(entry -> {
 			switch (entry.getKey()) {
-				// Fixed fields created by the PocketBase system
+				// Fixed fields created by the PBOperations system
 				case "id":
 					record.setId(entry.getValue().getAsString());
 					break;
@@ -199,47 +199,18 @@ public class PocketBase {
 					// If the field is a multi-value, then it is also an array
 					// even if there is only one file.
 					if (entry.getValue().toString().charAt(0) == '[') {
-						JsonArray array = entry.getValue().getAsJsonArray();
-
-						boolean isFileArray = true;
-
-						// Check if the array contains only files
-						for (JsonElement element : array) {
-							String elementAsString = element.getAsString();
-
-							// Check if any string in the array does not contain a dot
-							if (!elementAsString.contains(".")) {
-								isFileArray = false;
-								break;
-							}
-						}
-
-						if (isFileArray) {
-							fileList = new ArrayList<>();
-							for (JsonElement element : array) {
-								fileList.add(new File(element.getAsString()));
-							}
-
-						} else {
-							stringList = new ArrayList<>();
-							for (JsonElement element : array) {
-								stringList.add(element.getAsString());
-							}
+						stringList = new ArrayList<>();
+						for (JsonElement element : entry.getValue().getAsJsonArray()) {
+							stringList.add(element.getAsString());
 						}
 					}
 
 					if (stringList != null && stringList.isEmpty())
 						// Empty string array
 						record.getValues().put(entry.getKey(), null);
-					else if (fileList != null && fileList.isEmpty())
-						// Empty file array
-						record.getValues().put(entry.getKey(), null);
 					else if (stringList != null) {
 						// String Array with elements
 						record.getValues().put(entry.getKey(), new PBValues().setStringList(stringList));
-					} else if (fileList != null) {
-						// File Array with elements
-						record.getValues().put(entry.getKey(), new PBValues().setFileList(fileList));
 					} else {
 						// Single Non-Array value
 						record.getValues().put(entry.getKey(), new PBValues().setString(entry.getValue().getAsString()));
@@ -266,6 +237,16 @@ public class PocketBase {
 				.replace("-", "%2D")
 				.replace("\"", "%22");
 
+	}
+
+	private static boolean isValidPath(String path) {
+		String regex = "^(?:[a-zA-Z]:)?[\\\\/](?:[^\\\\/]+[\\\\/])*[^\\\\/]*$";
+
+		Pattern pattern = Pattern.compile(regex);
+
+		Matcher matcher = pattern.matcher(path);
+
+		return matcher.matches();
 	}
 
 	// ==================== CRUD METHODS ====================
@@ -323,7 +304,6 @@ public class PocketBase {
 	 *
 	 * @param collectionName the collection name
 	 * @param recordValues   the map containing the values to insert
-	 * @param files          the map containing the files to insert, where the String is the name of the field in the db
 	 * @param authToken      the authorization token
 	 * @return the record created
 	 * @throws IOException         the database is unreachable
@@ -345,7 +325,8 @@ public class PocketBase {
 			} else if (PBValues.isFileList(entry.getValue())) {
 				// FILE LIST
 				for (File file : entry.getValue().getFileList()) {
-					publisher.addPart(entry.getKey(), file.toPath());
+					if (file.exists())
+						publisher.addPart(entry.getKey(), file.toPath());
 				}
 			// TODO: add support for relations
 			} else if (PBValues.isString(entry.getValue())){
@@ -576,12 +557,12 @@ public class PocketBase {
 			if (PBValues.isStringList(entry.getValue())){
 				// STRING LIST
 				for (String string : entry.getValue().getStringList()) {
-					publisher.addPart(entry.getKey(), string);
-				}
-			} else if (PBValues.isFileList(entry.getValue())) {
-				// FILE LIST
-				for (File file : entry.getValue().getFileList()) {
-					publisher.addPart(entry.getKey(), file.toPath());
+					if(string != null && isValidPath(string))
+						// FILE PATH
+						publisher.addPart(entry.getKey(), new File(string).toPath());
+					else if (string != null)
+						// STRING
+						publisher.addPart(entry.getKey(), string);
 				}
 				// TODO: add support for relations
 			} else if (PBValues.isString(entry.getValue())){
@@ -678,7 +659,7 @@ public class PocketBase {
 		// Iterate through the JSON object and set the values of the record
 		record.entrySet().forEach(entry -> {
 			switch (entry.getKey()) {
-				// Fixed fields created by the PocketBase system
+				// Fixed fields created by the PBOperations system
 				case "id":
 					userData.setId(entry.getValue().getAsString());
 					break;
@@ -812,59 +793,5 @@ public class PocketBase {
 	public File downloadFile(String collectionName, String recordId, String fileName, String savePath) throws IOException, PocketBaseException, InterruptedException {
 		return downloadFile(collectionName, recordId, fileName, savePath, null, null);
 	}
-
-	/*
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues, Map<String, File> files, String authToken) throws IOException, InterruptedException, PocketBaseException {
-		// Create the URL
-		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
-
-		// Insert everything in the multipart body
-		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
-
-		// case 0: no files
-		// case 1: one file
-		// case 2: more than one file
-
-
-
-
-
-
-		// Values
-		for (Map.Entry<String, Object> entry : updatedValues.entrySet()) {
-			if (entry.getValue() != null)
-				publisher.addPart(entry.getKey(), entry.getValue().toString());
-		}
-
-		// Files
-		for (Map.Entry<String, File> entry : files.entrySet()) {
-			publisher.addPart(entry.getKey(), entry.getValue().toPath());
-		}
-
-		// Open HTTP connection
-		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-				.uri(URI.create(url))
-				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
-				.method("PATCH", publisher.build());
-
-		// Add the authorization token if present
-		if (authToken != null) {
-			requestBuilder = requestBuilder.header("Authorization", authToken);
-		}
-
-		// Send the request and get the response json
-		String response = handleResponse(requestBuilder);
-
-		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
-		return buildRecord(jsonObject);
-	}
-
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues, Map<String, File> files) throws IOException, InterruptedException, PocketBaseException {
-		return updateRecordWithFiles(collectionName, recordId, updatedValues, files, null);
-
-	}
-
-	 */
-
 
 }

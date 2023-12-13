@@ -2,10 +2,8 @@ package testing;
 
 import connector.PBRecord;
 import connector.PBValues;
-import connector.PocketBase;
+import connector.PBOperations;
 
-import java.io.File;
-import java.nio.file.Files;
 import java.util.*;
 
 public class Hello {
@@ -23,7 +21,7 @@ public class Hello {
 	private static final String SAVE_PATH = "C:/Users/Alfredo/Desktop/Hello.png";
 
 	public static void main(String[] args) throws Exception {
-		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
+		PBOperations pb = new PBOperations("http://127.0.0.1:8090");
 
 		/*
 		Map<String, PBValues> values = new HashMap<>();
@@ -47,12 +45,20 @@ public class Hello {
 		
 		PBRecord record = pb.readOneRecord(COLLECTION, RECORD);
 		System.out.println("record = " + record);
-		List<File> files = record.getValues().get("image").getFileList();
-		List<String> strings = record.getValues().get("type").getStringList();
+		Map<String, PBValues> files = new HashMap<>();
 
-		System.out.println(record.getValues().get("content").getString());
-		System.out.println("strings = " + strings);
-		System.out.println("files = " + files);
+		files.put("image", new PBValues().setStringList(List.of(GIANTS)));
+		record.setValues(files);
+
+		// ADD A NEW FILE: filesStringList.add(path);
+		// REMOVE A FILE WHEN THERE ARE MORE THAN ONE: filesStringList.remove(index);
+		// REMOVE ALL FILES: filesStringList.clear(); filesStringList.add("");
+		// UPDATE A FILE: filesStringList.remove(index); filesStringList.add(index, path);
+
+
+		System.out.println("record = " + record);
+		record = pb.updateRecordWithFiles(COLLECTION, record.getId(), record.getValues());
+		System.out.println("record = " + record);
 
 	}
 }
