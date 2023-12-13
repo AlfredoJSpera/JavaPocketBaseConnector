@@ -12,13 +12,13 @@ import java.util.List;
  * The value can be a String or a List of Strings.
  * Only one of these values can be set at a time.
  */
-public class PBValues {
+public class PBValue {
 	private String string;
 	private List<String> stringList;
 
 	// TODO: Add support for relations
 
-	public PBValues() {
+	public PBValue() {
 		string = null;
 		stringList = null;
 	}
@@ -26,7 +26,7 @@ public class PBValues {
 	/**
 	 * Set the value of this object to a String.
 	 */
-	public PBValues set(String string) {
+	public PBValue setString(String string) {
 		this.stringList = null;
 		this.string = string;
 		return this;
@@ -35,7 +35,7 @@ public class PBValues {
 	/**
 	 * Set the value of this object to a List of Strings.
 	 */
-	public PBValues setList(List<String> stringList) {
+	public PBValue setList(List<String> stringList) {
 		this.string = null;
 		this.stringList = stringList;
 		return this;
@@ -44,7 +44,7 @@ public class PBValues {
 	/**
 	 * Get the value of this object as a String.
 	 */
-	public String get() {
+	public String getString() {
 		return string;
 	}
 
@@ -55,11 +55,11 @@ public class PBValues {
 		return stringList;
 	}
 
-	public static boolean isString(PBValues value) {
-		return value.get() != null;
+	public static boolean isString(PBValue value) {
+		return value.getString() != null;
 	}
 
-	public static boolean isStringList(PBValues value) {
+	public static boolean isStringList(PBValue value) {
 		return value.getList() != null;
 	}
 
@@ -75,15 +75,15 @@ public class PBValues {
 	}
 
 	/**
-	 * This class is used to serialize and deserialize the PBValues class, so that it can be used directly with Gson.
+	 * This class is used to serialize and deserialize the PBValue class, so that it can be used directly with Gson.
 	 */
-	static class PBValuesTypeAdapter extends TypeAdapter<PBValues> {
+	static class PBValuesTypeAdapter extends TypeAdapter<PBValue> {
 		@Override
-		public void write(JsonWriter out, PBValues value) throws IOException {
+		public void write(JsonWriter out, PBValue value) throws IOException {
 			if (value != null) {
-				if (value.get() != null) {
+				if (value.getString() != null) {
 					// STRING
-					out.value(value.get());
+					out.value(value.getString());
 				} else if (value.getList() != null) {
 					// STRING LIST
 					out.beginArray();
@@ -98,7 +98,7 @@ public class PBValues {
 		}
 
 		@Override
-		public PBValues read(JsonReader in) throws IOException {
+		public PBValue read(JsonReader in) throws IOException {
 			return null;
 		}
 	}

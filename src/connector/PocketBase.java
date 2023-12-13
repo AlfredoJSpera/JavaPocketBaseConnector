@@ -25,7 +25,7 @@ public class PocketBase {
 	private final String address;
 	private final Gson gson = new GsonBuilder()
 			.setPrettyPrinting()
-			.registerTypeAdapter(PBValues.class, new PBValues.PBValuesTypeAdapter())
+			.registerTypeAdapter(PBValue.class, new PBValue.PBValuesTypeAdapter())
 			.serializeNulls()
 			.create();
 
@@ -169,7 +169,7 @@ public class PocketBase {
 				case "updated":
 					record.setUpdated(entry.getValue().getAsString());
 					break;
-				// Record fields (PBValues)
+				// Record fields (PBValue)
 				default:
 					List<String> stringList = null;
 
@@ -184,10 +184,10 @@ public class PocketBase {
 
 					if (stringList != null) {
 						// String Array
-						record.getValues().put(entry.getKey(), new PBValues().setList(stringList));
+						record.getValues().put(entry.getKey(), new PBValue().setList(stringList));
 					} else {
 						// Single Non-Array value
-						record.getValues().put(entry.getKey(), new PBValues().set(entry.getValue().getAsString()));
+						record.getValues().put(entry.getKey(), new PBValue().setString(entry.getValue().getAsString()));
 					}
 					break;
 			}
@@ -231,7 +231,7 @@ public class PocketBase {
 
 	// ==================== CRUD METHODS ====================
 
-	
+
 	/**
 	 * Creates a new record inside a protected collection using an authorization token.
 	 *
@@ -242,7 +242,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord createRecord(String collectionName, Map<String, PBValues> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, Map<String, PBValue> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -275,7 +275,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord createRecord(String collectionName, Map<String, PBValues> recordValues) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, Map<String, PBValue> recordValues) throws IOException, PocketBaseException, InterruptedException {
 		return createRecord(collectionName, recordValues, null);
 	}
 
@@ -424,7 +424,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord updateRecord(String collectionName, String recordId, Map<String, PBValues> updatedValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord updateRecord(String collectionName, String recordId, Map<String, PBValue> updatedValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -454,7 +454,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord updateRecord(String collectionName, String recordId, Map<String, PBValues> updatedValues) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord updateRecord(String collectionName, String recordId, Map<String, PBValue> updatedValues) throws IOException, PocketBaseException, InterruptedException {
 		return updateRecord(collectionName, recordId, updatedValues, null);
 	}
 
@@ -695,15 +695,15 @@ public class PocketBase {
 	 * @throws IOException         the database is unreachable
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 */
-	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValues> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValue> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
 		// Insert everything in the multipart body
 		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
 
-		for (Map.Entry<String, PBValues> entry : recordValues.entrySet()) {
-			if (PBValues.isStringList(entry.getValue())){
+		for (Map.Entry<String, PBValue> entry : recordValues.entrySet()) {
+			if (PBValue.isStringList(entry.getValue())){
 				// STRING LIST
 				for (String string : entry.getValue().getList()) {
 					if(string != null && isValidPath(string))
@@ -714,9 +714,9 @@ public class PocketBase {
 						publisher.addPart(entry.getKey(), string);
 				}
 				// TODO: add support for relations
-			} else if (PBValues.isString(entry.getValue())){
+			} else if (PBValue.isString(entry.getValue())){
 				// STRING
-				publisher.addPart(entry.getKey(), entry.getValue().get());
+				publisher.addPart(entry.getKey(), entry.getValue().getString());
 			}
 		}
 
@@ -748,7 +748,7 @@ public class PocketBase {
 	 * @throws IOException         the database is unreachable
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 */
-	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValues> recordValues) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValue> recordValues) throws IOException, PocketBaseException, InterruptedException {
 		return createRecordWithFiles(collectionName, recordValues, null);
 	}
 	/**
@@ -761,15 +761,15 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues , String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValue> updatedValues , String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
 		// Insert everything in the multipart body
 		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
 
-		for (Map.Entry<String, PBValues> entry : updatedValues.entrySet()) {
-			if (PBValues.isStringList(entry.getValue())){
+		for (Map.Entry<String, PBValue> entry : updatedValues.entrySet()) {
+			if (PBValue.isStringList(entry.getValue())){
 				// STRING LIST
 				for (String string : entry.getValue().getList()) {
 					if(string != null && isValidPath(string))
@@ -780,9 +780,9 @@ public class PocketBase {
 						publisher.addPart(entry.getKey(), string);
 				}
 				// TODO: add support for relations
-			} else if (PBValues.isString(entry.getValue())){
+			} else if (PBValue.isString(entry.getValue())){
 				// STRING
-				publisher.addPart(entry.getKey(), entry.getValue().get());
+				publisher.addPart(entry.getKey(), entry.getValue().getString());
 			}
 		}
 
@@ -813,7 +813,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValue> updatedValues) throws IOException, PocketBaseException, InterruptedException {
 		return updateRecordWithFiles(collectionName, recordId, updatedValues, null);
 	}
 
