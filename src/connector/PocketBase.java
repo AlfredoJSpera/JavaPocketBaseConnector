@@ -194,26 +194,56 @@ public class PocketBase {
 				// Record fields (PBValues)
 				default:
 					List<String> stringList = null;
+					List<File> fileList = null;
 
 					// If the field is a multi-value, then it is also an array
-					// even if there is only one file. Convert the JsonArray
-					// to a List of Strings
+					// even if there is only one file.
 					if (entry.getValue().toString().charAt(0) == '[') {
-						stringList = new ArrayList<>();
-						for (JsonElement element : entry.getValue().getAsJsonArray()) {
-							stringList.add(element.getAsString());
+						JsonArray array = entry.getValue().getAsJsonArray();
+
+						boolean isFileArray = true;
+
+						// Check if the array contains only files
+						for (JsonElement element : array) {
+							String elementAsString = element.getAsString();
+
+							// Check if any string in the array does not contain a dot
+							if (!elementAsString.contains(".")) {
+								isFileArray = false;
+								break;
+							}
+						}
+
+						if (isFileArray) {
+							fileList = new ArrayList<>();
+							for (JsonElement element : array) {
+								fileList.add(new File(element.getAsString()));
+							}
+
+						} else {
+							stringList = new ArrayList<>();
+							for (JsonElement element : array) {
+								stringList.add(element.getAsString());
+							}
 						}
 					}
 
 					if (stringList != null && stringList.isEmpty())
-						// Empty array
+						// Empty string array
+						record.getValues().put(entry.getKey(), null);
+					else if (fileList != null && fileList.isEmpty())
+						// Empty file array
 						record.getValues().put(entry.getKey(), null);
 					else if (stringList != null) {
-						// Array with elements
+						// String Array with elements
 						record.getValues().put(entry.getKey(), new PBValues().setStringList(stringList));
-					} else
-						// Single value
+					} else if (fileList != null) {
+						// File Array with elements
+						record.getValues().put(entry.getKey(), new PBValues().setFileList(fileList));
+					} else {
+						// Single Non-Array value
 						record.getValues().put(entry.getKey(), new PBValues().setString(entry.getValue().getAsString()));
+					}
 					break;
 			}
 		});
@@ -535,11 +565,50 @@ public class PocketBase {
 		return updateRecord(collectionName, recordId, updatedValues, null);
 	}
 
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues , String authToken) {
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues , String authToken) throws IOException, PocketBaseException, InterruptedException {
+		// Create the URL
+		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
+		// Insert everything in the multipart body
+		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
+
+		for (Map.Entry<String, PBValues> entry : updatedValues.entrySet()) {
+			if (PBValues.isStringList(entry.getValue())){
+				// STRING LIST
+				for (String string : entry.getValue().getStringList()) {
+					publisher.addPart(entry.getKey(), string);
+				}
+			} else if (PBValues.isFileList(entry.getValue())) {
+				// FILE LIST
+				for (File file : entry.getValue().getFileList()) {
+					publisher.addPart(entry.getKey(), file.toPath());
+				}
+				// TODO: add support for relations
+			} else if (PBValues.isString(entry.getValue())){
+				// STRING
+				publisher.addPart(entry.getKey(), entry.getValue().getString());
+			}
+		}
+
+		// Open HTTP connection
+		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
+				.method("PATCH", publisher.build());
+
+		// Add the authorization token if present
+		if (authToken != null) {
+			requestBuilder = requestBuilder.header("Authorization", authToken);
+		}
+
+		// Send the request and get the response json
+		String response = handleResponse(requestBuilder);
+
+		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
+		return buildRecord(jsonObject);
 	}
 
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues) {
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues) throws IOException, PocketBaseException, InterruptedException {
 		return updateRecordWithFiles(collectionName, recordId, updatedValues, null);
 	}
 

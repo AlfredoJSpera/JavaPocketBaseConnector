@@ -92,6 +92,8 @@ public class PBValues {
 			return string;
 		} else if (stringList != null) {
 			return stringList.toString();
+		} else if (fileList != null) {
+			return fileList.toString();
 		} else {
 			return "";
 		}

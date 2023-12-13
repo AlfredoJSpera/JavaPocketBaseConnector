@@ -6,10 +6,7 @@ import connector.PocketBase;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Hello {
 	private static final String ADMIN_EMAIL = "adminroot@admin.com";
@@ -19,7 +16,7 @@ public class Hello {
 	private static final String USER_PASS = "Password";
 
 	private static final String COLLECTION = "posts";
-	private static final String RECORD = "nntjxpwbrstk9qo";
+	private static final String RECORD = "rvem2iu77xwe1ef";
 
 	private static final String GIANTS = "C:/Users/Alfredo/Desktop/the-giants-causeway.png";
 	private static final String WAVES = "C:/Users/Alfredo/Desktop/wave.png";
@@ -28,6 +25,7 @@ public class Hello {
 	public static void main(String[] args) throws Exception {
 		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
+		/*
 		Map<String, PBValues> values = new HashMap<>();
 		values.put("title", new PBValues().setString("Hello World!"));
 		values.put("content", new PBValues().setString("content"));
@@ -45,6 +43,16 @@ public class Hello {
 		values.put("type", new PBValues().setStringList(types));
 
 		PBRecord record = pb.createRecordWithFiles(COLLECTION, values);
+		*/
+		
+		PBRecord record = pb.readOneRecord(COLLECTION, RECORD);
+		System.out.println("record = " + record);
+		List<File> files = record.getValues().get("image").getFileList();
+		List<String> strings = record.getValues().get("type").getStringList();
+
+		System.out.println(record.getValues().get("content").getString());
+		System.out.println("strings = " + strings);
+		System.out.println("files = " + files);
 
 	}
 }
