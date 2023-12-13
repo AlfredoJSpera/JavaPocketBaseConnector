@@ -1,18 +1,14 @@
 # JavaPocketBaseConnector
 This is a Java connector for [PocketBase](https://pocketbase.io) that lets you use your database in Java.
 
-It is still a work in progress.
+This is still a work in progress.
 
 ---
 ## Todo
 ### Important
-- [x] Change how the `update` method takes in the record id 
-- [x] Test the update of files
+- [ ] Test all of the operations in the jar
 - [ ] Test the `expand` query parameter in `PBQuery`
 - [ ] Add support for `expand` in `readOneRecord`
-- [ ] Create a jar file
-- [ ] Figure out how to create a github release and add the jar
-- [ ] Add support for multiple files in a single field
 
 ### Other
 - [ ] OAuth2
