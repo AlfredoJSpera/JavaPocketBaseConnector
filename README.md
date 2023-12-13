@@ -16,9 +16,9 @@ This is still a work in progress.
 
 ---
 ## Usage
-***TODO: Add jar instructions***
+Download the jar and insert it in your project as a library.
+Download [pocketbase.exe](https://github.com/pocketbase/pocketbase/releases) and start the server with `pocketbase.exe serve`.
 
-After downloading both the jar and [pocketbase.exe](https://github.com/pocketbase/pocketbase/releases), start the server with `pocketbase.exe serve` and then you can use the connector in your Java project.
 ### List/Search
 Fetch a paginated records list.
 ```java
