@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="JavaPocketBaseConnector:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/JavaPocketBaseConnector_jar</output-path>
+    <root id="archive" name="JavaPocketBaseConnector.jar">
+      <element id="module-output" name="JavaPocketBaseConnector" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/gson-2.10.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
