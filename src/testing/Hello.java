@@ -1,9 +1,15 @@
 package testing;
 
 import connector.PBRecord;
+import connector.PBValues;
 import connector.PocketBase;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Hello {
 	private static final String ADMIN_EMAIL = "adminroot@admin.com";
@@ -22,10 +28,22 @@ public class Hello {
 	public static void main(String[] args) throws Exception {
 		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
-		PBRecord record = pb.readOneRecord(COLLECTION, RECORD);
+		Map<String, PBValues> values = new HashMap<>();
+		values.put("title", new PBValues().setString("Hello World!"));
+		values.put("content", new PBValues().setString("content"));
+		values.put("views", new PBValues().setString("145"));
 
-		System.out.println("record = " + record);
-		pb.downloadFile(COLLECTION, RECORD, record.getValues().get("image").getStringListValue().get(0), SAVE_PATH);
+		List<File> images = new ArrayList<>();
+		images.add(new File(GIANTS));
+		images.add(new File(WAVES));
+		List<String> types = new ArrayList<>();
+		types.add("other");
+		types.add("panorama");
+
+		values.put("image", new PBValues().setFileList(images));
+		values.put("type", new PBValues().setStringList(types));
+
+		PBRecord record = pb.createRecordWithFiles(COLLECTION, values);
 
 	}
 }

@@ -25,6 +25,7 @@ public class PocketBase {
 	private final String address;
 	private final Gson gson = new GsonBuilder()
 			.setPrettyPrinting()
+			.registerTypeAdapter(PBValues.class, new PBValues.PBValuesTypeAdapter())
 			.serializeNulls()
 			.create();
 
@@ -209,10 +210,10 @@ public class PocketBase {
 						record.getValues().put(entry.getKey(), null);
 					else if (stringList != null) {
 						// Array with elements
-						record.getValues().put(entry.getKey(), new PBValues().setStringListValue(stringList));
+						record.getValues().put(entry.getKey(), new PBValues().setStringList(stringList));
 					} else
 						// Single value
-						record.getValues().put(entry.getKey(), new PBValues().setStringValue(entry.getValue().getAsString()));
+						record.getValues().put(entry.getKey(), new PBValues().setString(entry.getValue().getAsString()));
 					break;
 			}
 		});
@@ -249,7 +250,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord createRecord(String collectionName, Map<String, Object> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, Map<String, PBValues> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
@@ -282,7 +283,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord createRecord(String collectionName, Map<String, Object> recordValues) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecord(String collectionName, Map<String, PBValues> recordValues) throws IOException, PocketBaseException, InterruptedException {
 		return createRecord(collectionName, recordValues, null);
 	}
 
@@ -298,21 +299,28 @@ public class PocketBase {
 	 * @throws IOException         the database is unreachable
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 */
-	public PBRecord createRecordWithFiles(String collectionName, Map<String, Object> recordValues, Map<String, File> files, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValues> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records";
 
 		// Insert everything in the multipart body
 		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
 
-		// Values
-		for (Map.Entry<String, Object> entry : recordValues.entrySet()) {
-			publisher.addPart(entry.getKey(), entry.getValue().toString());
-		}
-
-		// Files
-		for (Map.Entry<String, File> entry : files.entrySet()) {
-			publisher.addPart(entry.getKey(), entry.getValue().toPath());
+		for (Map.Entry<String, PBValues> entry : recordValues.entrySet()) {
+			if (PBValues.isStringList(entry.getValue())){
+				// STRING LIST
+				for (String string : entry.getValue().getStringList()) {
+					publisher.addPart(entry.getKey(), string);
+				}
+			} else if (entry.getValue().getFileList() != null) {
+				// FILE LIST
+				for (File file : entry.getValue().getFileList()) {
+					publisher.addPart(entry.getKey(), file.toPath());
+				}
+			} else {
+				// STRING
+				publisher.addPart(entry.getKey(), entry.getValue().getString());
+			}
 		}
 
 		// Open HTTP connection
@@ -344,8 +352,8 @@ public class PocketBase {
 	 * @throws IOException         the database is unreachable
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 */
-	public PBRecord createRecordWithFiles(String collectionName, Map<String, Object> recordValues, Map<String, File> files) throws IOException, PocketBaseException, InterruptedException {
-		return createRecordWithFiles(collectionName, recordValues, files, null);
+	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValues> recordValues) throws IOException, PocketBaseException, InterruptedException {
+		return createRecordWithFiles(collectionName, recordValues, null);
 	}
 
 	/**
@@ -493,7 +501,7 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord updateRecord(String collectionName, String recordId, Map<String, Object> updatedValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord updateRecord(String collectionName, String recordId, Map<String, PBValues> updatedValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -523,13 +531,8 @@ public class PocketBase {
 	 * @throws PocketBaseException in case of error throws a message with the details of the error
 	 * @throws IOException         the database is unreachable
 	 */
-	public PBRecord updateRecord(String collectionName, String recordId, Map<String, Object> updatedValues) throws IOException, PocketBaseException, InterruptedException {
+	public PBRecord updateRecord(String collectionName, String recordId, Map<String, PBValues> updatedValues) throws IOException, PocketBaseException, InterruptedException {
 		return updateRecord(collectionName, recordId, updatedValues, null);
-	}
-
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, Object> updatedValues, Map<String, File> files) throws IOException, InterruptedException, PocketBaseException {
-		return updateRecordWithFiles(collectionName, recordId, updatedValues, files, null);
-
 	}
 
 	/**
@@ -573,7 +576,6 @@ public class PocketBase {
 	public boolean deleteRecord(String collectionName, String recordId) throws IOException, PocketBaseException, InterruptedException {
 		return deleteRecord(collectionName, recordId, null);
 	}
-
 
 	// ==================== AUTHENTICATION METHODS ====================
 	/**
@@ -635,7 +637,6 @@ public class PocketBase {
 
 		return userData;
 	}
-
 	/**
 	 * Authenticates an admin.
 	 *
@@ -663,8 +664,8 @@ public class PocketBase {
 		);
 	}
 
-
 	// ==================== FILE HANDLING ====================
+
 	/**
 	 * Downloads a file to the local machine from a record inside a protected collection with an authorization token.
 	 *
@@ -704,7 +705,6 @@ public class PocketBase {
 			return outputPath.toFile();
 		}
 	}
-
 	/**
 	 * Downloads a file to the local machine from a record inside a collection.
 	 *
@@ -736,7 +736,8 @@ public class PocketBase {
 		return downloadFile(collectionName, recordId, fileName, savePath, null, null);
 	}
 
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, Object> updatedValues, Map<String, File> files, String authToken) throws IOException, InterruptedException, PocketBaseException {
+	/*
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues, Map<String, File> files, String authToken) throws IOException, InterruptedException, PocketBaseException {
 		// Create the URL
 		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
 
@@ -780,6 +781,13 @@ public class PocketBase {
 		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
 		return buildRecord(jsonObject);
 	}
+
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues, Map<String, File> files) throws IOException, InterruptedException, PocketBaseException {
+		return updateRecordWithFiles(collectionName, recordId, updatedValues, files, null);
+
+	}
+
+	 */
 
 
 }
