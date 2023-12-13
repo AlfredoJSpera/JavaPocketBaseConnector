@@ -4,7 +4,6 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -16,7 +15,6 @@ import java.util.List;
 public class PBValues {
 	private String string;
 	private List<String> stringList;
-	private List<File> fileList;
 
 	// TODO: Add support for relations
 
@@ -28,7 +26,7 @@ public class PBValues {
 	/**
 	 * Set the value of this object to a String.
 	 */
-	public PBValues setString(String string) {
+	public PBValues set(String string) {
 		this.stringList = null;
 		this.string = string;
 		return this;
@@ -37,53 +35,32 @@ public class PBValues {
 	/**
 	 * Set the value of this object to a List of Strings.
 	 */
-	public PBValues setStringList(List<String> stringList) {
+	public PBValues setList(List<String> stringList) {
 		this.string = null;
 		this.stringList = stringList;
 		return this;
 	}
 
 	/**
-	 * Set the value of this object to a List of Files.
-	 */
-	public PBValues setFileList(List<File> fileList) {
-		this.string = null;
-		this.stringList = null;
-		this.fileList = fileList;
-		return this;
-	}
-
-	/**
 	 * Get the value of this object as a String.
 	 */
-	public String getString() {
+	public String get() {
 		return string;
 	}
 
 	/**
 	 * Get the value of this object as a List of Strings.
 	 */
-	public List<String> getStringList() {
+	public List<String> getList() {
 		return stringList;
 	}
 
-	/**
-	 * Get the value of this object as a List of Files.
-	 */
-	public List<File> getFileList() {
-		return fileList;
-	}
-
 	public static boolean isString(PBValues value) {
-		return value.getString() != null;
+		return value.get() != null;
 	}
 
 	public static boolean isStringList(PBValues value) {
-		return value.getStringList() != null;
-	}
-
-	public static boolean isFileList(PBValues value) {
-		return value.getFileList() != null;
+		return value.getList() != null;
 	}
 
 	@Override
@@ -92,8 +69,6 @@ public class PBValues {
 			return string;
 		} else if (stringList != null) {
 			return stringList.toString();
-		} else if (fileList != null) {
-			return fileList.toString();
 		} else {
 			return "";
 		}
@@ -106,21 +81,14 @@ public class PBValues {
 		@Override
 		public void write(JsonWriter out, PBValues value) throws IOException {
 			if (value != null) {
-				if (value.getString() != null) {
+				if (value.get() != null) {
 					// STRING
-					out.value(value.getString());
-				} else if (value.getStringList() != null) {
+					out.value(value.get());
+				} else if (value.getList() != null) {
 					// STRING LIST
 					out.beginArray();
-					for (String str : value.getStringList()) {
+					for (String str : value.getList()) {
 						out.value(str);
-					}
-					out.endArray();
-				} else if (value.getFileList() != null) {
-					// FILE LIST
-					out.beginArray();
-					for (File file : value.getFileList()) {
-						out.value(file.getPath());
 					}
 					out.endArray();
 				}

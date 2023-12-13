@@ -19,9 +19,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A class with all the methods to operate on <a href="https://pocketbase.io/">PBOperations</a> collections and records.
+ * A class with all the methods to operate on <a href="https://pocketbase.io/">PocketBase</a> collections and records.
  */
-public class PBOperations {
+public class PocketBase {
 	private final String address;
 	private final Gson gson = new GsonBuilder()
 			.setPrettyPrinting()
@@ -30,15 +30,15 @@ public class PBOperations {
 			.create();
 
 	/**
-	 * Instantiates a new PBOperations connection.
+	 * Instantiates a new PocketBase connection.
 	 *
 	 * @param address the string address of the database
 	 */
-	public PBOperations(String address) {
+	public PocketBase(String address) {
 		this.address = address;
 	}
 
-	// ==================== COMMON METHODS ====================
+	// ================  METHODS ================
 
 	public String getAddress() {
 		return address;
@@ -141,28 +141,6 @@ public class PBOperations {
 	}
 
 	/**
-	 * Authenticates a user or admin.
-	 *
-	 * @param identity       the identity (email)
-	 * @param password       the password
-	 * @param userOrAdminUrl the url for the user or the admin
-	 */
-	private String authorize(String identity, String password, String userOrAdminUrl) throws IOException, InterruptedException, PocketBaseException {
-		// Create the input JSON
-		JsonObject inputJson = new JsonObject();
-		inputJson.addProperty("identity", identity);
-		inputJson.addProperty("password", password);
-
-		// Open HTTP connection
-		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-				.uri(URI.create(userOrAdminUrl))
-				.header("Content-Type", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(inputJson.toString()));
-
-		return handleResponse(requestBuilder);
-	}
-
-	/**
 	 * Builds a record from a JSON object.
 	 *
 	 * @param object the JSON object
@@ -175,7 +153,7 @@ public class PBOperations {
 		// Iterate through the JSON object and set the values of the record
 		object.entrySet().forEach(entry -> {
 			switch (entry.getKey()) {
-				// Fixed fields created by the PBOperations system
+				// Fixed fields created by the PocketBase system
 				case "id":
 					record.setId(entry.getValue().getAsString());
 					break;
@@ -194,7 +172,6 @@ public class PBOperations {
 				// Record fields (PBValues)
 				default:
 					List<String> stringList = null;
-					List<File> fileList = null;
 
 					// If the field is a multi-value, then it is also an array
 					// even if there is only one file.
@@ -205,15 +182,12 @@ public class PBOperations {
 						}
 					}
 
-					if (stringList != null && stringList.isEmpty())
-						// Empty string array
-						record.getValues().put(entry.getKey(), null);
-					else if (stringList != null) {
-						// String Array with elements
-						record.getValues().put(entry.getKey(), new PBValues().setStringList(stringList));
+					if (stringList != null) {
+						// String Array
+						record.getValues().put(entry.getKey(), new PBValues().setList(stringList));
 					} else {
 						// Single Non-Array value
-						record.getValues().put(entry.getKey(), new PBValues().setString(entry.getValue().getAsString()));
+						record.getValues().put(entry.getKey(), new PBValues().set(entry.getValue().getAsString()));
 					}
 					break;
 			}
@@ -239,6 +213,11 @@ public class PBOperations {
 
 	}
 
+	/**
+	 * Checks if a string is a valid path.
+	 * @param path the string to check
+	 * @return true if the string is a valid path, false otherwise
+	 */
 	private static boolean isValidPath(String path) {
 		String regex = "^(?:[a-zA-Z]:)?[\\\\/](?:[^\\\\/]+[\\\\/])*[^\\\\/]*$";
 
@@ -249,10 +228,12 @@ public class PBOperations {
 		return matcher.matches();
 	}
 
+
 	// ==================== CRUD METHODS ====================
 
+	
 	/**
-	 * Creates a new record inside a protected collection with an authorization token.
+	 * Creates a new record inside a protected collection using an authorization token.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordValues   the map containing the values to insert
@@ -296,75 +277,6 @@ public class PBOperations {
 	 */
 	public PBRecord createRecord(String collectionName, Map<String, PBValues> recordValues) throws IOException, PocketBaseException, InterruptedException {
 		return createRecord(collectionName, recordValues, null);
-	}
-
-	/**
-	 * Creates a new record inside a protected collection with an authorization token and files.<br>
-	 * <b>This method uses the multipart/form-data content type.</b>
-	 *
-	 * @param collectionName the collection name
-	 * @param recordValues   the map containing the values to insert
-	 * @param authToken      the authorization token
-	 * @return the record created
-	 * @throws IOException         the database is unreachable
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 */
-	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValues> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
-		// Create the URL
-		String url = address + "/api/collections/" + collectionName + "/records";
-
-		// Insert everything in the multipart body
-		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
-
-		for (Map.Entry<String, PBValues> entry : recordValues.entrySet()) {
-			if (PBValues.isStringList(entry.getValue())){
-				// STRING LIST
-				for (String string : entry.getValue().getStringList()) {
-					publisher.addPart(entry.getKey(), string);
-				}
-			} else if (PBValues.isFileList(entry.getValue())) {
-				// FILE LIST
-				for (File file : entry.getValue().getFileList()) {
-					if (file.exists())
-						publisher.addPart(entry.getKey(), file.toPath());
-				}
-			// TODO: add support for relations
-			} else if (PBValues.isString(entry.getValue())){
-				// STRING
-				publisher.addPart(entry.getKey(), entry.getValue().getString());
-			}
-		}
-
-		// Open HTTP connection
-		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-				.uri(URI.create(url))
-				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
-				.POST(publisher.build());
-
-		// Add the authorization token if present
-		if (authToken != null) {
-			requestBuilder = requestBuilder.header("Authorization", authToken);
-		}
-
-		// Send the request and get the response json
-		String response = handleResponse(requestBuilder);
-
-		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
-		return buildRecord(jsonObject);
-	}
-
-	/**
-	 * Creates a new record inside a collection with files.<br>
-	 * <b>This method uses the multipart/form-data content type.</b>
-	 *
-	 * @param collectionName the collection name
-	 * @param recordValues   the map containing the values to insert
-	 * @return the record created
-	 * @throws IOException         the database is unreachable
-	 * @throws PocketBaseException in case of error throws a message with the details of the error
-	 */
-	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValues> recordValues) throws IOException, PocketBaseException, InterruptedException {
-		return createRecordWithFiles(collectionName, recordValues, null);
 	}
 
 	/**
@@ -459,7 +371,7 @@ public class PBOperations {
 	}
 
 	/**
-	 * Gets one record from a protected collection with an authorization token.
+	 * Gets one record from a protected collection using an authorization token.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record
@@ -503,7 +415,7 @@ public class PBOperations {
 	}
 
 	/**
-	 * Updates an existing record inside a protected collection with an authorization token.
+	 * Updates an existing record inside a protected collection using an authorization token.
 	 *
 	 * @param collectionName the collection name
 	 * @param updatedValues  the updated values of the record
@@ -546,55 +458,8 @@ public class PBOperations {
 		return updateRecord(collectionName, recordId, updatedValues, null);
 	}
 
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues , String authToken) throws IOException, PocketBaseException, InterruptedException {
-		// Create the URL
-		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
-
-		// Insert everything in the multipart body
-		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
-
-		for (Map.Entry<String, PBValues> entry : updatedValues.entrySet()) {
-			if (PBValues.isStringList(entry.getValue())){
-				// STRING LIST
-				for (String string : entry.getValue().getStringList()) {
-					if(string != null && isValidPath(string))
-						// FILE PATH
-						publisher.addPart(entry.getKey(), new File(string).toPath());
-					else if (string != null)
-						// STRING
-						publisher.addPart(entry.getKey(), string);
-				}
-				// TODO: add support for relations
-			} else if (PBValues.isString(entry.getValue())){
-				// STRING
-				publisher.addPart(entry.getKey(), entry.getValue().getString());
-			}
-		}
-
-		// Open HTTP connection
-		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-				.uri(URI.create(url))
-				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
-				.method("PATCH", publisher.build());
-
-		// Add the authorization token if present
-		if (authToken != null) {
-			requestBuilder = requestBuilder.header("Authorization", authToken);
-		}
-
-		// Send the request and get the response json
-		String response = handleResponse(requestBuilder);
-
-		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
-		return buildRecord(jsonObject);
-	}
-
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues) throws IOException, PocketBaseException, InterruptedException {
-		return updateRecordWithFiles(collectionName, recordId, updatedValues, null);
-	}
-
 	/**
-	 * Deletes an existing record inside a protected collection with an authorization token.
+	 * Deletes an existing record inside a protected collection using an authorization token.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record to delete
@@ -635,7 +500,33 @@ public class PBOperations {
 		return deleteRecord(collectionName, recordId, null);
 	}
 
+
+
+
+
+
 	// ==================== AUTHENTICATION METHODS ====================
+	/**
+	 * Authenticates a user or admin.
+	 *
+	 * @param identity       the identity (email)
+	 * @param password       the password
+	 * @param userOrAdminUrl the url for the user or the admin
+	 */
+	private String authorize(String identity, String password, String userOrAdminUrl) throws IOException, InterruptedException, PocketBaseException {
+		// Create the input JSON
+		JsonObject inputJson = new JsonObject();
+		inputJson.addProperty("identity", identity);
+		inputJson.addProperty("password", password);
+
+		// Open HTTP connection
+		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+				.uri(URI.create(userOrAdminUrl))
+				.header("Content-Type", "application/json")
+				.POST(HttpRequest.BodyPublishers.ofString(inputJson.toString()));
+
+		return handleResponse(requestBuilder);
+	}
 	/**
 	 * Authenticates a regular user.
 	 *
@@ -659,7 +550,7 @@ public class PBOperations {
 		// Iterate through the JSON object and set the values of the record
 		record.entrySet().forEach(entry -> {
 			switch (entry.getKey()) {
-				// Fixed fields created by the PBOperations system
+				// Fixed fields created by the PocketBase system
 				case "id":
 					userData.setId(entry.getValue().getAsString());
 					break;
@@ -722,10 +613,11 @@ public class PBOperations {
 		);
 	}
 
-	// ==================== FILE HANDLING ====================
 
+
+	// ==================== FILE HANDLING ====================
 	/**
-	 * Downloads a file to the local machine from a record inside a protected collection with an authorization token.
+	 * Downloads a file to the local machine from a record inside a protected collection using an authorization token.
 	 *
 	 * @param collectionName the collection name
 	 * @param recordId       the id of the record
@@ -778,7 +670,6 @@ public class PBOperations {
 	public File downloadFile(String collectionName, String recordId, String fileName, String savePath, String thumb) throws IOException, PocketBaseException, InterruptedException {
 		return downloadFile(collectionName, recordId, fileName, savePath, thumb, null);
 	}
-
 	/**
 	 * Downloads a file to the local machine from a record inside a collection.
 	 *
@@ -792,6 +683,138 @@ public class PBOperations {
 	 */
 	public File downloadFile(String collectionName, String recordId, String fileName, String savePath) throws IOException, PocketBaseException, InterruptedException {
 		return downloadFile(collectionName, recordId, fileName, savePath, null, null);
+	}
+	/**
+	 * Creates a new record with files inside a protected collection using an authorization token.<br><br>
+	 * <b>This method uses the multipart/form-data content type.</b>
+	 *
+	 * @param collectionName the collection name
+	 * @param recordValues   the map containing the values to insert
+	 * @param authToken      the authorization token
+	 * @return the record created
+	 * @throws IOException         the database is unreachable
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 */
+	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValues> recordValues, String authToken) throws IOException, PocketBaseException, InterruptedException {
+		// Create the URL
+		String url = address + "/api/collections/" + collectionName + "/records";
+
+		// Insert everything in the multipart body
+		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
+
+		for (Map.Entry<String, PBValues> entry : recordValues.entrySet()) {
+			if (PBValues.isStringList(entry.getValue())){
+				// STRING LIST
+				for (String string : entry.getValue().getList()) {
+					if(string != null && isValidPath(string))
+						// FILE PATH
+						publisher.addPart(entry.getKey(), new File(string).toPath());
+					else if (string != null)
+						// STRING
+						publisher.addPart(entry.getKey(), string);
+				}
+				// TODO: add support for relations
+			} else if (PBValues.isString(entry.getValue())){
+				// STRING
+				publisher.addPart(entry.getKey(), entry.getValue().get());
+			}
+		}
+
+		// Open HTTP connection
+		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
+				.POST(publisher.build());
+
+		// Add the authorization token if present
+		if (authToken != null) {
+			requestBuilder = requestBuilder.header("Authorization", authToken);
+		}
+
+		// Send the request and get the response json
+		String response = handleResponse(requestBuilder);
+
+		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
+		return buildRecord(jsonObject);
+	}
+
+	/**
+	 * Creates a new record with files inside a collection.<br><br>
+	 * <b>This method uses the multipart/form-data content type.</b>
+	 *
+	 * @param collectionName the collection name
+	 * @param recordValues   the map containing the values to insert
+	 * @return the record created
+	 * @throws IOException         the database is unreachable
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 */
+	public PBRecord createRecordWithFiles(String collectionName, Map<String, PBValues> recordValues) throws IOException, PocketBaseException, InterruptedException {
+		return createRecordWithFiles(collectionName, recordValues, null);
+	}
+	/**
+	 * Updates an existing record with files inside a collection using an authorization token.
+	 *
+	 * @param collectionName the collection name
+	 * @param updatedValues  the updated values of the record
+	 * @param authToken      the authorization token
+	 * @return the updated record
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues , String authToken) throws IOException, PocketBaseException, InterruptedException {
+		// Create the URL
+		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
+
+		// Insert everything in the multipart body
+		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
+
+		for (Map.Entry<String, PBValues> entry : updatedValues.entrySet()) {
+			if (PBValues.isStringList(entry.getValue())){
+				// STRING LIST
+				for (String string : entry.getValue().getList()) {
+					if(string != null && isValidPath(string))
+						// FILE PATH
+						publisher.addPart(entry.getKey(), new File(string).toPath());
+					else if (string != null)
+						// STRING
+						publisher.addPart(entry.getKey(), string);
+				}
+				// TODO: add support for relations
+			} else if (PBValues.isString(entry.getValue())){
+				// STRING
+				publisher.addPart(entry.getKey(), entry.getValue().get());
+			}
+		}
+
+		// Open HTTP connection
+		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
+				.method("PATCH", publisher.build());
+
+		// Add the authorization token if present
+		if (authToken != null) {
+			requestBuilder = requestBuilder.header("Authorization", authToken);
+		}
+
+		// Send the request and get the response json
+		String response = handleResponse(requestBuilder);
+
+		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
+		return buildRecord(jsonObject);
+	}
+
+	/**
+	 * Updates an existing record with files inside a collection.
+	 *
+	 * @param collectionName the collection name
+	 * @param updatedValues  the updated values of the record
+	 * @return the updated record
+	 * @throws PocketBaseException in case of error throws a message with the details of the error
+	 * @throws IOException         the database is unreachable
+	 */
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, PBValues> updatedValues) throws IOException, PocketBaseException, InterruptedException {
+		return updateRecordWithFiles(collectionName, recordId, updatedValues, null);
 	}
 
 }

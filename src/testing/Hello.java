@@ -1,8 +1,7 @@
 package testing;
 
-import connector.PBRecord;
 import connector.PBValues;
-import connector.PBOperations;
+import connector.PocketBase;
 
 import java.util.*;
 
@@ -21,44 +20,47 @@ public class Hello {
 	private static final String SAVE_PATH = "C:/Users/Alfredo/Desktop/Hello.png";
 
 	public static void main(String[] args) throws Exception {
-		PBOperations pb = new PBOperations("http://127.0.0.1:8090");
+		PocketBase pb = new PocketBase("http://127.0.0.1:8090");
 
-		/*
-		Map<String, PBValues> values = new HashMap<>();
-		values.put("title", new PBValues().setString("Hello World!"));
-		values.put("content", new PBValues().setString("content"));
-		values.put("views", new PBValues().setString("145"));
-
-		List<File> images = new ArrayList<>();
-		images.add(new File(GIANTS));
-		images.add(new File(WAVES));
 
 		List<String> types = new ArrayList<>();
 		types.add("other");
 		types.add("panorama");
-
-		values.put("image", new PBValues().setFileList(images));
-		values.put("type", new PBValues().setStringList(types));
-
-		PBRecord record = pb.createRecordWithFiles(COLLECTION, values);
+		/*
+		List<String> images = new ArrayList<>();
+		images.add(GIANTS);
+		images.add(WAVES);
 		*/
-		
+		Map<String, PBValues> values = new HashMap<>();
+		values.put("title", new PBValues().set("Something"));
+		values.put("content", new PBValues().set("other"));
+		values.put("views", new PBValues().set("1"));
+		//values.put("image", new PBValues().setList(images));
+		values.put("type", new PBValues().setList(types));
+
+		pb.createRecord(COLLECTION, values);
+
+
+
+
+		/*
 		PBRecord record = pb.readOneRecord(COLLECTION, RECORD);
 		System.out.println("record = " + record);
-		Map<String, PBValues> files = new HashMap<>();
+		List<String> list = record.getValues().get("image").getStringList();
+		System.out.println("list = " + list);
+		//list.set(0, "");
+		//list.add(GIANTS);
+		list.clear();
+		list.add("");
+		System.out.println("list = " + list);
+		pb.updateRecordWithFiles(COLLECTION, record.getId(), record.getValues());
+		*/
 
-		files.put("image", new PBValues().setStringList(List.of(GIANTS)));
-		record.setValues(files);
 
 		// ADD A NEW FILE: filesStringList.add(path);
-		// REMOVE A FILE WHEN THERE ARE MORE THAN ONE: filesStringList.remove(index);
+		// REMOVE A FILE: filesStringList.set(index, "");
 		// REMOVE ALL FILES: filesStringList.clear(); filesStringList.add("");
-		// UPDATE A FILE: filesStringList.remove(index); filesStringList.add(index, path);
-
-
-		System.out.println("record = " + record);
-		record = pb.updateRecordWithFiles(COLLECTION, record.getId(), record.getValues());
-		System.out.println("record = " + record);
+		// UPDATE A FILE: filesStringList.set(index, path);
 
 	}
 }

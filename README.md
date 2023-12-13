@@ -6,8 +6,8 @@ It is still a work in progress.
 ---
 ## Todo
 ### Important
-- [ ] Change how the `update` method takes in the record id 
-- [ ] Test the update of files
+- [x] Change how the `update` method takes in the record id 
+- [x] Test the update of files
 - [ ] Test the `expand` query parameter in `PBQuery`
 - [ ] Add support for `expand` in `readOneRecord`
 - [ ] Create a jar file
