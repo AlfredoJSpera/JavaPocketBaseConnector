@@ -1,5 +1,6 @@
 package connector;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,16 +10,16 @@ public class PBRecord {
 	private String collectionName;
 	private String created;
 	private String updated;
-	private Map<String, Object> values = new HashMap<>();
+	private Map<String, PBValues> values = new HashMap<>();
 
 	public PBRecord() {
 	}
 
-	public PBRecord(Map<String, Object> values) {
+	public PBRecord(Map<String, PBValues> values) {
 		this.values = values;
 	}
 
-	public PBRecord(String id, Map<String, Object> values) {
+	public PBRecord(String id, Map<String, PBValues> values) {
 		this.id = id;
 		this.values = values;
 	}
@@ -31,11 +32,11 @@ public class PBRecord {
 		this.updated = updated;
 	}
 
-	public Map<String, Object> getValues() {
+	public Map<String, PBValues> getValues() {
 		return values;
 	}
 
-	public void setValues(Map<String, Object> values) {
+	public void setValues(Map<String, PBValues> values) {
 		this.values = values;
 	}
 

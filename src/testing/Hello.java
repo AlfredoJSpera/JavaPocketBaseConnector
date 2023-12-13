@@ -15,7 +15,7 @@ public class Hello {
 	private static final String USER_PASS = "Password";
 
 	private static final String COLLECTION = "posts";
-	private static final String RECORD = "808jj0650c0usr1";
+	private static final String RECORD = "nntjxpwbrstk9qo";
 
 	private static final String INPUT_PATH = "C:/Users/Alfredo/Desktop/the-giants-causeway.png";
 	private static final String SAVE_PATH = "C:/Users/Alfredo/Desktop/Hello.png";
@@ -25,16 +25,7 @@ public class Hello {
 
 		PBRecord record = pb.readOneRecord(COLLECTION, RECORD);
 		System.out.println("record = " + record);
-		System.out.println(record.getValues().get("image"));
-
-		Map<String, Object> values = record.getValues();
-		values.put("title", "New Title");
-
-		Map<String, File> files = new HashMap<>();
-		files.put("image", new File(INPUT_PATH));
-
-		pb.updateRecordWithFiles(COLLECTION, RECORD, values, files);
-
+		pb.downloadFile(COLLECTION, RECORD, record.getValues().get("image").getStringListValue().get(0), SAVE_PATH);
 
 	}
 }

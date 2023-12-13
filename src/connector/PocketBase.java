@@ -190,29 +190,29 @@ public class PocketBase {
 				case "updated":
 					record.setUpdated(entry.getValue().getAsString());
 					break;
-				// Record fields
+				// Record fields (PBValues)
 				default:
-					List<String> array = null;
+					List<String> stringList = null;
 
-					// If the field is a file, then it is also an array
+					// If the field is a multi-value, then it is also an array
 					// even if there is only one file. Convert the JsonArray
-					// to a List<String>
+					// to a List of Strings
 					if (entry.getValue().toString().charAt(0) == '[') {
-						array = new ArrayList<>();
+						stringList = new ArrayList<>();
 						for (JsonElement element : entry.getValue().getAsJsonArray()) {
-							array.add(element.getAsString());
+							stringList.add(element.getAsString());
 						}
 					}
 
-					if (array != null && array.isEmpty())
+					if (stringList != null && stringList.isEmpty())
 						// Empty array
 						record.getValues().put(entry.getKey(), null);
-					else if (array != null) {
+					else if (stringList != null) {
 						// Array with elements
-						record.getValues().put(entry.getKey(), array);
+						record.getValues().put(entry.getKey(), new PBValues().setStringListValue(stringList));
 					} else
 						// Single value
-						record.getValues().put(entry.getKey(), entry.getValue().getAsString());
+						record.getValues().put(entry.getKey(), new PBValues().setStringValue(entry.getValue().getAsString()));
 					break;
 			}
 		});
@@ -527,42 +527,6 @@ public class PocketBase {
 		return updateRecord(collectionName, recordId, updatedValues, null);
 	}
 
-	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, Object> updatedValues, Map<String, File> files, String authToken) throws IOException, InterruptedException, PocketBaseException {
-		// Create the URL
-		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
-
-		// Insert everything in the multipart body
-		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
-
-		// Values
-		for (Map.Entry<String, Object> entry : updatedValues.entrySet()) {
-			if (entry.getValue() != null)
-				publisher.addPart(entry.getKey(), entry.getValue().toString());
-		}
-
-		// Files
-		for (Map.Entry<String, File> entry : files.entrySet()) {
-			publisher.addPart(entry.getKey(), entry.getValue().toPath());
-		}
-
-		// Open HTTP connection
-		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-				.uri(URI.create(url))
-				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
-				.method("PATCH", publisher.build());
-
-		// Add the authorization token if present
-		if (authToken != null) {
-			requestBuilder = requestBuilder.header("Authorization", authToken);
-		}
-
-		// Send the request and get the response json
-		String response = handleResponse(requestBuilder);
-
-		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
-		return buildRecord(jsonObject);
-	}
-
 	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, Object> updatedValues, Map<String, File> files) throws IOException, InterruptedException, PocketBaseException {
 		return updateRecordWithFiles(collectionName, recordId, updatedValues, files, null);
 
@@ -610,8 +574,8 @@ public class PocketBase {
 		return deleteRecord(collectionName, recordId, null);
 	}
 
-	// ==================== AUTHENTICATION METHODS ====================
 
+	// ==================== AUTHENTICATION METHODS ====================
 	/**
 	 * Authenticates a regular user.
 	 *
@@ -699,8 +663,8 @@ public class PocketBase {
 		);
 	}
 
-	// ==================== FILE HANDLING ====================
 
+	// ==================== FILE HANDLING ====================
 	/**
 	 * Downloads a file to the local machine from a record inside a protected collection with an authorization token.
 	 *
@@ -770,6 +734,51 @@ public class PocketBase {
 	 */
 	public File downloadFile(String collectionName, String recordId, String fileName, String savePath) throws IOException, PocketBaseException, InterruptedException {
 		return downloadFile(collectionName, recordId, fileName, savePath, null, null);
+	}
+
+	public PBRecord updateRecordWithFiles(String collectionName, String recordId, Map<String, Object> updatedValues, Map<String, File> files, String authToken) throws IOException, InterruptedException, PocketBaseException {
+		// Create the URL
+		String url = address + "/api/collections/" + collectionName + "/records/" + recordId;
+
+		// Insert everything in the multipart body
+		MultiPartBodyPublisher publisher = new MultiPartBodyPublisher();
+
+		// case 0: no files
+		// case 1: one file
+		// case 2: more than one file
+
+
+
+
+
+
+		// Values
+		for (Map.Entry<String, Object> entry : updatedValues.entrySet()) {
+			if (entry.getValue() != null)
+				publisher.addPart(entry.getKey(), entry.getValue().toString());
+		}
+
+		// Files
+		for (Map.Entry<String, File> entry : files.entrySet()) {
+			publisher.addPart(entry.getKey(), entry.getValue().toPath());
+		}
+
+		// Open HTTP connection
+		HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.header("Content-Type", "multipart/form-data; boundary=" + publisher.getBoundary())
+				.method("PATCH", publisher.build());
+
+		// Add the authorization token if present
+		if (authToken != null) {
+			requestBuilder = requestBuilder.header("Authorization", authToken);
+		}
+
+		// Send the request and get the response json
+		String response = handleResponse(requestBuilder);
+
+		JsonObject jsonObject = gson.fromJson(response, JsonObject.class);
+		return buildRecord(jsonObject);
 	}
 
 
