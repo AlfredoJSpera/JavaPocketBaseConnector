@@ -194,7 +194,7 @@ PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
 
 Map<String, PBValue> values = record.getValues();
 // Regular fields
-values.put("title", new PBValue().setString("New Value"));
+values.put("field1", new PBValue().setString("New Value"));
 
 List<String> files = values.get("file_field").getList();
 files.add("path/to/file.txt");
@@ -215,7 +215,7 @@ PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
 
 Map<String, PBValue> values = record.getValues();
 // Regular fields
-values.put("title", new PBValue().setString("New Value"));
+values.put("field1", new PBValue().setString("New Value"));
 
 List<String> files = values.get("file_field").getList();
 files.set(INDEX, ""); // Remove the file
@@ -236,7 +236,7 @@ PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
 
 Map<String, PBValue> values = record.getValues();
 // Regular fields
-values.put("title", new PBValue().setString("New Value"));
+values.put("field1", new PBValue().setString("New Value"));
 
 List<String> files = values.get("file_field").getList();
 files.clear();
@@ -260,7 +260,7 @@ PBRecord record = pb.readOneRecord("COLLECTION_NAME", "RECORD_ID");
 
 Map<String, PBValue> values = record.getValues();
 // Regular fields
-values.put("title", new PBValue().setString("New Value"));
+values.put("field1", new PBValue().setString("New Value"));
 
 List<String> files = values.get("file_field").getList();
 files.set(INDEX, ""); // Remove the old file
